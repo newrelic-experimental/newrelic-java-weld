@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="output" path="bin/default"/>
+	<classpathentry output="bin/main" kind="src" path="src/main/java">
+		<attributes>
+			<attribute name="gradle_scope" value="main"/>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry output="bin/test" kind="src" path="src/test/java">
+		<attributes>
+			<attribute name="gradle_scope" value="test"/>
+			<attribute name="gradle_used_by_scope" value="test"/>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8/"/>
+	<classpathentry sourcepath="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/org.jboss.weld/weld-core-impl/3.0.0.Final/c142f57de1cb6a34a9f4069cca1f34216ef23fb4/weld-core-impl-3.0.0.Final-sources.jar" kind="lib" path="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/org.jboss.weld/weld-core-impl/3.0.0.Final/acbc020de190aea278a85c080815ce92b144783b/weld-core-impl-3.0.0.Final.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/com.newrelic.agent.java/newrelic-agent/8.4.0/89392b07fd6f456721160dd6fd3b9c3272af0d8b/newrelic-agent-8.4.0-sources.jar" kind="lib" path="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/com.newrelic.agent.java/newrelic-agent/8.4.0/32a62e7436a22201dd6485845c9cb9001b4ca201/newrelic-agent-8.4.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/com/newrelic/agent/java/newrelic-api/8.4.0/newrelic-api-8.4.0-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/com/newrelic/agent/java/newrelic-api/8.4.0/newrelic-api-8.4.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/org.jboss.weld/weld-spi/3.0.Final/c47698a14969f34b18231097e3cfa7c865f89c3d/weld-spi-3.0.Final-sources.jar" kind="lib" path="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/org.jboss.weld/weld-spi/3.0.Final/1fb68a081a6a643f7089b7b6243e60868d84b7b5/weld-spi-3.0.Final.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/org.jboss.weld/weld-api/3.0.Final/f13d201b0aa64a77967bf5954d7f121d440d3101/weld-api-3.0.Final-sources.jar" kind="lib" path="/Users/dhilpipre/.gradle/caches/modules-2/files-2.1/org.jboss.weld/weld-api/3.0.Final/9ff589b7c02cba703621828b1c0784dfd99f1379/weld-api-3.0.Final.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/org/jboss/classfilewriter/jboss-classfilewriter/1.1.2.Final/jboss-classfilewriter-1.1.2.Final-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/org/jboss/classfilewriter/jboss-classfilewriter/1.1.2.Final/jboss-classfilewriter-1.1.2.Final.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/javax/annotation/javax.annotation-api/1.3/javax.annotation-api-1.3-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/javax/annotation/javax.annotation-api/1.3/javax.annotation-api-1.3.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/org/jboss/spec/javax/el/jboss-el-api_3.0_spec/1.0.7.Final/jboss-el-api_3.0_spec-1.0.7.Final-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/org/jboss/spec/javax/el/jboss-el-api_3.0_spec/1.0.7.Final/jboss-el-api_3.0_spec-1.0.7.Final.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/org/jboss/spec/javax/interceptor/jboss-interceptors-api_1.2_spec/1.0.0.Final/jboss-interceptors-api_1.2_spec-1.0.0.Final-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/org/jboss/spec/javax/interceptor/jboss-interceptors-api_1.2_spec/1.0.0.Final/jboss-interceptors-api_1.2_spec-1.0.0.Final.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/org/jboss/logging/jboss-logging/3.2.1.Final/jboss-logging-3.2.1.Final-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/org/jboss/logging/jboss-logging/3.2.1.Final/jboss-logging-3.2.1.Final.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/javax/enterprise/cdi-api/2.0/cdi-api-2.0-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/javax/enterprise/cdi-api/2.0/cdi-api-2.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/javax/inject/javax.inject/1/javax.inject-1-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/javax/inject/javax.inject/1/javax.inject-1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/Users/dhilpipre/.m2/repository/org/nanohttpd/nanohttpd/2.3.1/nanohttpd-2.3.1-sources.jar" kind="lib" path="/Users/dhilpipre/.m2/repository/org/nanohttpd/nanohttpd/2.3.1/nanohttpd-2.3.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="test"/>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/agent-bridge-datastore.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/agent-bridge.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/newrelic-security-agent.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/newrelic-weaver-scala-api.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/newrelic-agent-8.4.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/newrelic-weaver-api.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/newrelic-security-api.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/libs/newrelic-api.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/dhilpipre/Open-Source/newrelic-java-weld/test-lib/instrumentation-test.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+</classpath>

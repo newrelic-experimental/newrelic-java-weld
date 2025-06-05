@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Implementation-Title: com.newrelic.instrumentation.labs.weld-core-3.0
+Implementation-Vendor: New Relic Labs
+Implementation-Vendor-Id: com.newrelic.labs
+Implementation-Version: 1.0
+
