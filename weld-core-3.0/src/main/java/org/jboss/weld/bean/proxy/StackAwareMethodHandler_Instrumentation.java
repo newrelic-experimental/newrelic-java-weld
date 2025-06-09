@@ -13,7 +13,7 @@ import com.newrelic.api.agent.weaver.Weaver;
 @Weave(originalName = "org.jboss.weld.bean.proxy.StackAwareMethodHandler", type = MatchType.Interface)
 public abstract class StackAwareMethodHandler_Instrumentation {
 
-	@Trace(dispatcher = true)
+	@Trace
 	public Object invoke(Stack stack, Object self, Method thisMethod, Method proceed, Object[] args)  {
 		Class<?> methodClass = thisMethod.getDeclaringClass();
 		String methodName = thisMethod.getName();

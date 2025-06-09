@@ -11,7 +11,7 @@ import com.newrelic.api.agent.weaver.Weaver;
 @Weave(originalName = "org.jboss.weld.bean.proxy.BeanInstance", type = MatchType.Interface)
 public class BeanInstance_Instrumentation {
 
-	@Trace(dispatcher = true)
+	@Trace
 	public Object invoke(Object instance, Method method, Object... arguments) {
 		if(method != null) {
 			String methodName = method.getName();

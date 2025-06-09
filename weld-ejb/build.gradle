@@ -1,10 +1,10 @@
 
-// Build.gradle generated for instrumentation module weld-core
+// Build.gradle generated for instrumentation module weld-ejb
 
 apply plugin: 'java'
 
 dependencies {
-   implementation 'org.jboss.weld:weld-core-impl:3.0.0.Final'
+   implementation 'org.jboss.weld.module:weld-ejb:6.0.2.Final'
 
    // New Relic Java Agent dependencies
    implementation 'com.newrelic.agent.java:newrelic-agent:8.4.0'
@@ -15,7 +15,7 @@ dependencies {
 
 jar {
   manifest {
-    attributes 'Implementation-Title': 'com.newrelic.instrumentation.labs.weld-core-3.0'
+    attributes 'Implementation-Title': 'com.newrelic.instrumentation.labs.weld-ejb'
     attributes 'Implementation-Vendor': 'New Relic Labs'
     attributes 'Implementation-Vendor-Id': 'com.newrelic.labs'
     attributes 'Implementation-Version': 1.0
@@ -28,8 +28,5 @@ verifyInstrumentation {
   // Example:
   // passes 'javax.servlet:servlet-api:[2.2,2.5]'
   // exclude 'javax.servlet:servlet-api:2.4.public_draft'
-    passes 'org.jboss.weld:weld-core-impl:[3.0.0.Final,4.0.0.Final)'
-    excludeRegex '.*Alpha[0-9].*'
-    excludeRegex '.*Beta[0-9].*'
-    excludeRegex '.*CR[0-9].*'
+  passes 'org.jboss.weld.module:weld-ejb:[3.0.Final,)'
 }

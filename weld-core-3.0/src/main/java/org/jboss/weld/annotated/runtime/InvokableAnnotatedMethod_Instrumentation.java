@@ -15,7 +15,7 @@ public abstract class InvokableAnnotatedMethod_Instrumentation<T> {
 
 	private final AnnotatedMethod<T> annotatedMethod = Weaver.callOriginal();
 	
-	@Trace(dispatcher = true)
+	@Trace
 	public <X> X invoke(Object instance, Object... parameters) {
 		Method javaMethod = annotatedMethod.getJavaMember();
 		Class<?> methodClass = javaMethod.getDeclaringClass();
@@ -24,7 +24,7 @@ public abstract class InvokableAnnotatedMethod_Instrumentation<T> {
 		return Weaver.callOriginal();
 	}
 	
-	@Trace(dispatcher = true)
+	@Trace
 	public <X> X invokeOnInstance(Object instance, Object... parameters) {
 		Method javaMethod = annotatedMethod.getJavaMember();
 		Class<?> methodClass = javaMethod.getDeclaringClass();

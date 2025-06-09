@@ -10,11 +10,10 @@ import com.newrelic.api.agent.weaver.MatchType;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
 
-
 @Weave(originalName = "org.jboss.weld.contexts.activator.AbstractActivateRequestContextInterceptor", type = MatchType.BaseClass)
 public abstract class AbstractActivateRequestContextInterceptor_Instrumentation {
 
-	@Trace(dispatcher = true)
+	@Trace
 	Object invoke(InvocationContext ctx)  {
 		Method method = ctx.getMethod();
 		if(method != null) {

@@ -9,7 +9,6 @@ import com.newrelic.api.agent.NewRelic;
 import com.newrelic.api.agent.Trace;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
-import com.newrelic.instrumentation.labs.weld.core_4.WeldCoreUtils;
 
 @Weave(originalName = "org.jboss.weld.bean.proxy.CombinedInterceptorAndDecoratorStackMethodHandler")
 public class CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation {
@@ -25,16 +24,13 @@ public class CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation {
 				if(outerDecorator != null) {
 					if(thisMethod != null) {
 						NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",thisMethod.getDeclaringClass().getName(),thisMethod.getName());
-						WeldCoreUtils.addMethod(thisMethod, "Custom/Weld/Interceptor_Decorator/Stack");
 					}
 				} else  if(proceed != null){
 					NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",proceed.getDeclaringClass().getName(),proceed.getName());
-					WeldCoreUtils.addMethod(proceed, "Custom/Weld/Interceptor_Decorator/Stack");
 				}
 			}
 		} else {
 			NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",proceed.getDeclaringClass().getName(),proceed.getName());
-			WeldCoreUtils.addMethod(proceed, "Custom/Weld/Interceptor_Decorator/Stack");
 		}
 		return Weaver.callOriginal();
 	}

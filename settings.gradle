@@ -1,3 +1,4 @@
 rootProject.name = 'java-instrumentation-template'
 include 'weld-core-3.0'
 include 'weld-core-4.0'
+include 'weld-ejb'
