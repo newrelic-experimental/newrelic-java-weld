@@ -1,74 +1,74 @@
 <a href="https://opensource.newrelic.com/oss-category/#new-relic-experimental"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/newrelic/opensource-website/raw/main/src/images/categories/dark/Experimental.png"><source media="(prefers-color-scheme: light)" srcset="https://github.com/newrelic/opensource-website/raw/main/src/images/categories/Experimental.png"><img alt="New Relic Open Source experimental project banner." src="https://github.com/newrelic/opensource-website/raw/main/src/images/categories/Experimental.png"></picture></a>
+ 
+![GitHub forks](https://img.shields.io/github/forks/newrelic-experimental/newrelic-java-weld?style=social)
+![GitHub stars](https://img.shields.io/github/stars/newrelic-experimental/newrelic-java-weld?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/newrelic-experimental/newrelic-java-weld?style=social)
+
+![GitHub all releases](https://img.shields.io/github/downloads/newrelic-experimental/newrelic-java-weld/total)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/newrelic-experimental/newrelic-java-weld)
+![GitHub last commit](https://img.shields.io/github/last-commit/newrelic-experimental/newrelic-java-weld)
+![GitHub Release Date](https://img.shields.io/github/release-date/newrelic-experimental/newrelic-java-weld)
 
 
-![GitHub forks](https://img.shields.io/github/forks/newrelic-experimental/java-instrumentation-template?style=social)
-![GitHub stars](https://img.shields.io/github/stars/newrelic-experimental/java-instrumentation-template?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/newrelic-experimental/java-instrumentation-template?style=social)
+![GitHub issues](https://img.shields.io/github/issues/newrelic-experimental/newrelic-java-weld)
+![GitHub issues closed](https://img.shields.io/github/issues-closed/newrelic-experimental/newrelic-java-weld)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/newrelic-experimental/newrelic-java-weld)
+![GitHub pull requests closed](https://img.shields.io/github/issues-pr-closed/newrelic-experimental/newrelic-java-weld)  
+   
 
-![GitHub all releases](https://img.shields.io/github/downloads/newrelic-experimental/java-instrumentation-template/total)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/newrelic-experimental/java-instrumentation-template)
-![GitHub last commit](https://img.shields.io/github/last-commit/newrelic-experimental/java-instrumentation-template)
-![GitHub Release Date](https://img.shields.io/github/release-date/newrelic-experimental/java-instrumentation-template)
+# New Relic Java Agent Instrumentation for Weld
 
-
-![GitHub issues](https://img.shields.io/github/issues/newrelic-experimental/java-instrumentation-template)
-![GitHub issues closed](https://img.shields.io/github/issues-closed/newrelic-experimental/java-instrumentation-template)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/newrelic-experimental/java-instrumentation-template)
-![GitHub pull requests closed](https://img.shields.io/github/issues-pr-closed/newrelic-experimental/java-instrumentation-template)
-
-
-# [Project Name - use format "newrelic-java-<name>"] [build badges go here when available]
-
->[Brief description - what is the project and value does it provide? How often should users expect to get releases? How is versioning set up? Where does this project want to go?]
-
-## Value
-
-|Metrics | Events | Logs | Traces | Visualization | Automation |
-|:-:|:-:|:-:|:-:|:-:|:-:|
-|:x:|:x:|:x:|:white_check_mark:|:x:|:x:|
-
-### List of Metrics,Events,Logs,Traces
-|Name | Type | Description |
-|:-:|:-:|:-:|
-|*metric.name* | Metric| *description*|
-|*event.name* | Event|  *description*|
-|*log.name* | Log|  *description*|
-|*trace.name*| Trace| *description*
-|---|---|---|
+This instrumentation serves as a custom extension for the New Relic Java Agent, enhancing observability for applications utilizing Weld—the reference implementation of CDI (Contexts and Dependency Injection) for Java EE/Jakarta EE. It aims to deliver detailed insights into Weld's internal operations, with a particular focus on its robust proxy, interceptor, and decorator mechanisms.
 
 
 ## Installation
 
-> [Include a step-by-step procedure on how to get your code installed. Be sure to include any third-party dependencies that need to be installed separately]
+1. Either download the Release instrumentation jars or build them as described in the Building section below.   
+2. In the New Relic Java Agent directory, create a directory named extensions if it does not already exist.   
+3. Copy the instrumentation jars into the extensions directory.   
+4. Restart the application
 
-## Getting Started
+## Configuration [optional]
 
->[Simple steps to start working with the software similar to a "Hello World"]
+These settings are necessary only if you wish to exclude specific classes and methods from instrumentation. You can configure this via your `newrelic.yml` file under the common section.
 
-## Usage
+```yaml
+# newrelic.yml
+common:
+  # ... other common agent settings ...
 
->[**Optional** - Include more thorough instructions on how to use the software. This section might not be needed if the Getting Started section is enough. Remove this section if it's not needed.]
+  # Custom instrumentation settings for Weld
+  weld: 
+    ignore_traces_enabled: true # Set to true to enable dynamic trace ignoring (default: false)
+    ignored_trace_patterns:
+      # List of fully qualified class or method name patterns to ignore from tracing.
+      # Uses wildcard matching where '*' matches any sequence of characters.
+      # Examples:
+      # - "com.nr.labs.weld.PauseService:pause*" # Ignores all 'pause' methods in PauseService
+      # - "com.nr.labs.weld.MyService:doSomething" # Ignores a specific method
+      # - "com.nr.labs.weld.MyService2:*" # Ignores all methods in MyService2
+      # - "org.jboss.weld.bean.proxy.*" # Ignores all methods in Weld's proxy package
+      # - "org.jboss.weld.bean.proxy.CombinedInterceptorAndDecoratorStackMethodHandler:invoke" # Ignores a specific internal proxy handler method
+      - "com.example.noisy.internal.Class:fastMethod"
+      - "com.example.AnotherProxyClass:*"
+```
 
 ## Building
 
->[**Optional** - Include this section if users will need to follow specific instructions to build the software from source. Be sure to include any third party build dependencies that need to be installed separately. Remove this section if it's not needed.]
-
-## Testing
-
->[**Optional** - Include instructions on how to run tests if we include tests with the codebase. Remove this section if it's not needed.]
+To build the Weld instrumenation jars requires that Gradle is installed.   
+   
+Set the environment variable NEW_RELIC_EXTENSIONS_DIR to a local directory.  If building on the same machine as the application use the extensions directory of the New Relic Java Agent.   
+To build one of the modules (e.g weld-core-4.0) use the following command.   
+gradle weld-core-4.0:clean weld-core-4.0:install .  
+   
+To build all of the instrumenation jars, use the following command.    
+gradle clean install
 
 ## Support
 
 New Relic has open-sourced this project. This project is provided AS-IS WITHOUT WARRANTY OR DEDICATED SUPPORT. Issues and contributions should be reported to the project here on GitHub.
 
->[Choose 1 of the 2 options below for Support details, and remove the other one.]
-
->[Option 1 - no specific thread in Community]
 >We encourage you to bring your experiences and questions to the [Explorers Hub](https://discuss.newrelic.com) where our community members collaborate on solutions and new ideas.
-
->[Option 2 - thread in Community]
->New Relic hosts and moderates an online forum where customers can interact with New Relic employees as well as other customers to get help and share best practices. Like all official New Relic open source projects, there's a related Community topic in the New Relic Explorers Hub.
->You can find this project's topic/threads here: [URL for Community thread]
 
 ## Contributing
 
@@ -82,6 +82,5 @@ If you believe you have found a security vulnerability in this project or any of
 
 ## License
 
-[Project Name] is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License.
+Weld  Instrumentation is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License.
 
->[If applicable: [Project Name] also uses source code from third-party libraries. You can find full details on which libraries are used and the terms under which they are licensed in the third-party notices document.]
