@@ -81,7 +81,6 @@ public class WeldCoreUtils {
 		// NEW: Check if this method should be ignored dynamically
         String fullyQualifiedMethodName = method.getDeclaringClass().getName() + ":" + method.getName();
         if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
-            NewRelic.getAgent().getLogger().log(Level.FINER, "WeldCoreUtils: Dynamically ignoring method instrumentation for {0}", fullyQualifiedMethodName);
             return; // Skip instrumentation
         }
 
