@@ -20,7 +20,7 @@ public abstract class InvokableAnnotatedMethod_Instrumentation<T> {
 		Method javaMethod = annotatedMethod.getJavaMember();
 		Class<?> methodClass = javaMethod.getDeclaringClass();
 		String name = javaMethod.getName();
-		NewRelic.getAgent().getTracedMethod().setMetricName("Custom","InvokableAnnotatedMethod","invoke",methodClass.getName(), name);
+		NewRelic.getAgent().getTracedMethod().setMetricName("Custom","InvokableAnnotatedMethod","invoke",WeldCoreUtils.cleanProxyClassName(methodClass.getName()), name);
 		WeldCoreUtils.addMethod(javaMethod, "Custom/Weld/AnnotatedMethod");
 		return Weaver.callOriginal();
 	}
@@ -30,7 +30,7 @@ public abstract class InvokableAnnotatedMethod_Instrumentation<T> {
 		Method javaMethod = annotatedMethod.getJavaMember();
 		Class<?> methodClass = javaMethod.getDeclaringClass();
 		String name = javaMethod.getName();
-		NewRelic.getAgent().getTracedMethod().setMetricName("Custom","InvokableAnnotatedMethod","invokeOnInstance",methodClass.getName(), name);
+		NewRelic.getAgent().getTracedMethod().setMetricName("Custom","InvokableAnnotatedMethod","invokeOnInstance",WeldCoreUtils.cleanProxyClassName(methodClass.getName()), name);
 		WeldCoreUtils.addMethod(javaMethod, "Custom/Weld/AnnotatedMethod");
 		return Weaver.callOriginal();
 	}

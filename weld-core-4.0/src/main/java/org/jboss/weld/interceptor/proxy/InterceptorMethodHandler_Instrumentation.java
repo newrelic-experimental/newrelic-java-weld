@@ -9,6 +9,7 @@ import com.newrelic.api.agent.NewRelic;
 import com.newrelic.api.agent.Trace;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
+import com.newrelic.instrumentation.labs.weld.core_4.WeldCoreUtils;
 
 @Weave(originalName = "org.jboss.weld.interceptor.proxy.InterceptorMethodHandler")
 public class InterceptorMethodHandler_Instrumentation {
@@ -17,7 +18,7 @@ public class InterceptorMethodHandler_Instrumentation {
 	public Object invoke(Stack stack, Object self, Method thisMethod, Method proceed, Object[] args) {
 		if(proceed != null) {
 			if(isInterceptorMethod(thisMethod)) {
-				NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","InterceptorMethodHandler","invoke",proceed.getDeclaringClass().getName(),proceed.getName());
+				NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","InterceptorMethodHandler","invoke",WeldCoreUtils.cleanProxyClassName(proceed.getDeclaringClass().getName()),proceed.getName());
 			}
 		}
 		return Weaver.callOriginal();
@@ -25,7 +26,7 @@ public class InterceptorMethodHandler_Instrumentation {
 	
 	protected Object executeInterception(Object instance, Method method, Method proceed, Object[] args, InterceptionType interceptionType, Stack stack) {
 		if(proceed != null) {
-			NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","InterceptorMethodHandler","invoke",proceed.getDeclaringClass().getName(),proceed.getName());
+			NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","InterceptorMethodHandler","invoke",WeldCoreUtils.cleanProxyClassName(proceed.getDeclaringClass().getName()),proceed.getName());
 		}
 		return Weaver.callOriginal();
 	}
