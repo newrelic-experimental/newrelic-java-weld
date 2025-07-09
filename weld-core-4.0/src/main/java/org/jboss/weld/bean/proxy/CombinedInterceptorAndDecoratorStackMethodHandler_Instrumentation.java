@@ -24,16 +24,16 @@ public class CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation {
 			if(interceptorMethodHandler == null) {
 				if(outerDecorator != null) {
 					if(thisMethod != null) {
-						NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",thisMethod.getDeclaringClass().getName(),thisMethod.getName());
+						NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",WeldCoreUtils.cleanProxyClassName(thisMethod.getDeclaringClass().getName()),thisMethod.getName());
 						WeldCoreUtils.addMethod(thisMethod, "Custom/Weld/Interceptor_Decorator/Stack");
 					}
 				} else  if(proceed != null){
-					NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",proceed.getDeclaringClass().getName(),proceed.getName());
+					NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",WeldCoreUtils.cleanProxyClassName(proceed.getDeclaringClass().getName()),proceed.getName());
 					WeldCoreUtils.addMethod(proceed, "Custom/Weld/Interceptor_Decorator/Stack");
 				}
 			}
 		} else {
-			NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",proceed.getDeclaringClass().getName(),proceed.getName());
+			NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","CombinedInterceptorAndDecoratorStackMethodHandler","invoke",WeldCoreUtils.cleanProxyClassName(proceed.getDeclaringClass().getName()),proceed.getName());
 			WeldCoreUtils.addMethod(proceed, "Custom/Weld/Interceptor_Decorator/Stack");
 		}
 		return Weaver.callOriginal();

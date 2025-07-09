@@ -16,7 +16,7 @@ public class DecoratorProxyMethodHandler_Instrumentation {
 	@Trace
 	private Object doInvoke(WeldDecorator<?> weldDecorator, Object decoratorInstance, Method method, Object[] args) {
 		if(method != null) {
-			NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","DecoratorProxyMethodHandler","doInvoke",method.getDeclaringClass().getName(),method.getName());
+			NewRelic.getAgent().getTracedMethod().setMetricName("Custom","Weld","DecoratorProxyMethodHandler","doInvoke",WeldCoreUtils.cleanProxyClassName(method.getDeclaringClass().getName()),method.getName());
 			WeldCoreUtils.addMethod(method, "Custom/Weld/DecoratorProxy/");
 		}
 		return Weaver.callOriginal();

@@ -1,4 +1,5 @@
-package com.newrelic.instrumentation.labs.weld.ejb;
+
+package com.newrelic.instrumentation.labs.weld.core_3;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -7,10 +8,9 @@ import java.util.logging.Level;
 
 import com.newrelic.agent.bridge.AgentBridge;
 import com.newrelic.api.agent.NewRelic;
-import com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfig; // NEW IMPORT
+import com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfig;
 
-
-public class WeldEJBUtils {
+public class WeldCoreUtils {
 
 	private static final HashSet<Method> instrumented = new HashSet<Method>();
 	private static final HashSet<String> ignoredMethods = new HashSet<String>();
@@ -18,9 +18,7 @@ public class WeldEJBUtils {
 	public static final String CLIENTPROXY = "/Custom/Weld/ClientProxy";
 	public static final String BASEPROXY = "/Custom/Weld/";
 	
-	
-
-	   private static final String PROXY_SUFFIX_REGEX = "\\$.*?Subclass"; // Matches $...Subclass (case-insensitive, non-greedy)
+	 private static final String PROXY_SUFFIX_REGEX = "\\$.*?Subclass"; // Matches $...Subclass (case-insensitive, non-greedy)
 
 	    /**
 	     * Cleans up a class name by removing Weld-specific proxy suffixes (e.g., "$Proxy$_$$_WeldSubclass").
@@ -56,7 +54,7 @@ public class WeldEJBUtils {
 		ignoredMethods.add("equals");
 		ignoredMethods.add("toString");
 		ignoredMethods.add("hashCode");
-		
+		ignoredMethods.add("getInstance");
 	}
 	
 	public static void instrumentClass(Class<?> clazz, String prefix) {
@@ -79,10 +77,11 @@ public class WeldEJBUtils {
 		int modifiers = method.getModifiers();
 		if(Modifier.isPrivate(modifiers)) return;
 		
+		
 		// NEW: Check if this method should be ignored dynamically
         String fullyQualifiedMethodName = method.getDeclaringClass().getName() + ":" + method.getName();
         if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
-            NewRelic.getAgent().getLogger().log(Level.FINER, "WeldEJBUtils: Dynamically ignoring method instrumentation for {0}", fullyQualifiedMethodName);
+            NewRelic.getAgent().getLogger().log(Level.FINER, "WeldCoreUtils: Dynamically ignoring method instrumentation for {0}", fullyQualifiedMethodName);
             return; // Skip instrumentation
         }
 
@@ -92,4 +91,5 @@ public class WeldEJBUtils {
             instrumented.add(method); // Add to instrumented set AFTER successful instrumentation
 		}
 	}
+	
 }
