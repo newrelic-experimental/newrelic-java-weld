@@ -1,17 +1,11 @@
 package org.jboss.weld.interceptor.proxy;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.Set;
-
-import org.jboss.weld.bean.proxy.CombinedInterceptorAndDecoratorStackMethodHandler;
-
 import com.newrelic.api.agent.NewRelic;
 import com.newrelic.api.agent.TracedMethod;
 import com.newrelic.api.agent.weaver.MatchType;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
+import com.newrelic.instrumentation.labs.weld.core_4.WeldCoreUtils;
 
 @Weave(type = MatchType.BaseClass, originalName = "org.jboss.weld.interceptor.proxy.AroundInvokeInvocationContext")
 abstract class AroundInvokeInvocationContext_Instrumentation extends AbstractInvocationContext_Instrumentation {
@@ -21,7 +15,7 @@ abstract class AroundInvokeInvocationContext_Instrumentation extends AbstractInv
     	String methodName = method.getName();
     	TracedMethod tracedMethod = NewRelic.getAgent().getTracedMethod();
     	if(declaringClass != null && methodName != null) {
-    		tracedMethod.setMetricName("Custom","Weld","ProxyCall",declaringClass.getName(),methodName);
+    		tracedMethod.setMetricName("Custom","Weld","ProxyCall",WeldCoreUtils.cleanProxyClassName(declaringClass.getName()),methodName);
     	}
     	if(target != null) {
     		tracedMethod.addCustomAttribute("cdi.interceptor.target.class", target.getClass().getName());
