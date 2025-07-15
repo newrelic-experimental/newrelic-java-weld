@@ -146,13 +146,7 @@ jobs:
           upload_url: ${{ env.RELEASE_UPLOAD_URL }}
           asset_content_type: application/zip
      
-      - name: "Generate release changelog"
-        id: github_changelog
-        uses: Helmisek/conventional-changelog-generator@v1.0.6-release
-        with:
-          repo-token: ${{ secrets.OPENSOURCE_BOT_TOKEN }}
-          commit-types: "fix:Bug Fixes,feat:Features,doc:Documentation,build:Build Upgrades,BREAKING CHANGE:Enhancements"
-          template-path: ".github/workflows/CHANGELOG.tpl.md"
+     
          
      
       - name: update CHANGELOG.md
@@ -181,7 +175,7 @@ jobs:
            git commit -m "Update Changelog for Release [skip ci]"
 
           # Push the changes to the remote repository
-           git push --quiet --set-upstream origin HEAD
+          # git push --quiet --set-upstream origin HEAD
       
       - name: Get Compare URL
         run: |
