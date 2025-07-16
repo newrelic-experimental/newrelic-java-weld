@@ -1,3 +1,15 @@
+## Version: [v1.0.0](https://github.com/newrelic-experimental/newrelic-java-weld/releases/tag/v1.0.0) | Created: 2025-07-16
+### Build Upgrades
+- First baseline build
+
+### Features
+- Dynamically ignore and clean New Relic traces for Weld proxies
+- Merge pull request #2 from newrelic-experimental/feat-metric-naming-1
+- Merge pull request #3 from newrelic-experimental/feat-metric-naming
+
+### Bug Fixes
+- Merge pull request #5 from newrelic-experimental/fix_class_name_cleanup
+
 ## Installation
 
 To install:
