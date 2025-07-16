@@ -139,7 +139,7 @@ jobs:
       - name: Upload Release Artifacts
         uses: actions/upload-release-asset@v1
         env:
-          OPENSOURCE_BOT_TOKEN: ${{ secrets.OPENSOURCE_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.OPENSOURCE_BOT_TOKEN }}
         with:
           asset_path: /tmp/to/${{ env.RELEASE_NAME}}${{ steps.set_tag.outputs.tag }}.zip
           asset_name: ${{ env.RELEASE_NAME}}${{ steps.set_tag.outputs.tag }}.zip
