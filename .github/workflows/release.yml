@@ -18,10 +18,10 @@ jobs:
           fetch-depth: 0
           
 
-      - name: Set up JDK 17
+      - name: Set up JDK 11
         uses: actions/setup-java@v3
         with:
-          java-version: 17
+          java-version: 11
           distribution: 'temurin'
 
 
@@ -57,9 +57,9 @@ jobs:
       - name: Set release version
         id: set_release_version
         run: |
-          major_version=1
+          major_version=3
           minor_version=0
-          patch_revision=0
+          patch_revision=1
 
           # Retrieve the latest release tag
           latest_tag=$(git describe --abbrev=0 --tags 2>/dev/null) || true
@@ -146,7 +146,13 @@ jobs:
           upload_url: ${{ env.RELEASE_UPLOAD_URL }}
           asset_content_type: application/zip
      
-     
+      - name: "Generate release changelog"
+        id: github_changelog
+        uses: Helmisek/conventional-changelog-generator@v1.0.6-release
+        with:
+          repo-token: ${{ secrets.OPENSOURCE_BOT_TOKEN }}
+          commit-types: "fix:Bug Fixes,feat:Features,doc:Documentation,build:Build Upgrades,BREAKING CHANGE:Enhancements"
+          template-path: ".github/workflows/CHANGELOG.tpl.md"
          
      
       - name: update CHANGELOG.md
@@ -212,3 +218,4 @@ jobs:
               } catch (error) {
                 core.setFailed(error.message);
               }
+
