@@ -1,0 +1,10 @@
+common: &default_settings
+  # Test config: BeanInstance whitelist enabled
+  weld:
+    filtering_enabled: true
+    beaninstance:
+      track_full_names:
+        - "com.newrelic.weld.test.web.Game:check"
+        - "com.newrelic.weld.test.web.Game:reset"
+      track_regex_patterns:
+        - "com\\.newrelic\\.weld\\.test\\.web\\.Game:get.*"

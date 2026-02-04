@@ -74,8 +74,13 @@ public class TraceIgnoreConfig implements AgentConfigListener {
     }
 
     private static String convertWildcardToRegex(String pattern) {
-        // Escape special regex characters except for '*'
-        String regex = Pattern.quote(pattern).replace("\\*", ".*");
+        // Replace '*' with placeholder before quoting, then replace placeholder with regex wildcard
+        String placeholder = "###WILDCARD###";
+        String withPlaceholder = pattern.replace("*", placeholder);
+        String quoted = Pattern.quote(withPlaceholder);
+        String regex = quoted.replace(placeholder, "\\E.*\\Q");
+        // Clean up empty \Q\E pairs at start/end
+        regex = regex.replaceAll("^\\\\Q\\\\E", "").replaceAll("\\\\Q\\\\E$", "");
         return regex;
     }
 

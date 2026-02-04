@@ -7,7 +7,8 @@ import java.util.logging.Level;
 
 import com.newrelic.agent.bridge.AgentBridge;
 import com.newrelic.api.agent.NewRelic;
-import com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfig; // NEW IMPORT
+import com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfig;
+import com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfig;
 
 
 public class WeldEJBUtils {
@@ -78,16 +79,30 @@ public class WeldEJBUtils {
 		if(name.startsWith("weld_")) return;
 		int modifiers = method.getModifiers();
 		if(Modifier.isPrivate(modifiers)) return;
-		
-		// NEW: Check if this method should be ignored dynamically
-        String fullyQualifiedMethodName = method.getDeclaringClass().getName() + ":" + method.getName();
+
+		String className = method.getDeclaringClass().getName();
+		String methodName = method.getName();
+		String fullyQualifiedMethodName = className + ":" + methodName;
+
+		// FILTER 1: Check blacklist (existing - backward compatible)
+		// Skip methods explicitly ignored by customer
         if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
-            NewRelic.getAgent().getLogger().log(Level.FINER, "WeldEJBUtils: Dynamically ignoring method instrumentation for {0}", fullyQualifiedMethodName);
+            NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping EJB ProxyCall instrumentation (blacklisted): {0}", fullyQualifiedMethodName);
             return; // Skip instrumentation
         }
 
+		// FILTER 2: Check whitelist (new enhancement)
+		// When enabled, ONLY instrument methods in the whitelist
+		// When disabled, instrument everything (that passed blacklist)
+		if (!WeldTraceFilterConfig.shouldTraceProxyCall(className, methodName)) {
+			NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping EJB ProxyCall instrumentation (not whitelisted): {0}", fullyQualifiedMethodName);
+			return; // Skip instrumentation
+		}
+
  		if(!instrumented.contains(method)) {
- 			NewRelic.getAgent().getLogger().log(Level.FINER, "Instrumenting proxy method: {0}", method.toString());
+ 			NewRelic.getAgent().getLogger().log(Level.FINER, "Instrumenting EJB proxy method: {0}", method.toString());
 			AgentBridge.instrumentation.instrument(method, prefix);
             instrumented.add(method); // Add to instrumented set AFTER successful instrumentation
 		}

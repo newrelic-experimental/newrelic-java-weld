@@ -1,3 +1,21 @@
+## Version: [v2.0.0](https://github.com/newrelic-experimental/newrelic-java-weld/releases/tag/v2.0.0) | Created: 2026-02-04
+### Features
+- **Whitelist Filtering**: Selectively trace only specific CDI proxy methods using exact names or regex patterns
+- **Blacklist Filtering**: Ignore specific CDI proxy methods using wildcard patterns (e.g., `MyClass:*`)
+- **Dynamic Configuration**: Filter settings read dynamically from `newrelic.yml` without restart via `AgentConfigListener`
+- **Proxy Class Name Normalization**: Remove Weld proxy suffixes (e.g., `$Proxy$_$$_WeldSubclass`) from all metric names
+- **Memory Optimization**: Filtered methods don't create tracers, reducing memory overhead
+
+### Bug Fixes
+- Fixed wildcard pattern matching in `TraceIgnoreConfig.convertWildcardToRegex()` - wildcards now correctly expand to regex `.*`
+- Removed incorrect `Transaction.ignore()` call from `AroundInvokeInvocationContext` - filtered methods no longer affect transaction reporting
+- Applied consistent proxy class name cleaning across all instrumentation points (AroundInvokeInvocationContext, BeanInstance, ContextBeanInstance)
+
+### Breaking Changes
+- None - all enhancements are backward compatible. Default behavior (no filtering) unchanged.
+
+---
+
 ## Version: [v1.0.0](https://github.com/newrelic-experimental/newrelic-java-weld/releases/tag/v1.0.0) | Created: 2025-07-16
 ### Build Upgrades
 - First baseline build

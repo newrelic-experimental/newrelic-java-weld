@@ -1,0 +1,9 @@
+common: &default_settings
+  # Test config: ProxyCall whitelist enabled
+  weld:
+    filtering_enabled: true
+    proxycall:
+      track_full_names:
+        - "com.newrelic.weld.test.web.GameResource:getStatus"
+      track_regex_patterns:
+        - "com\\.newrelic\\.weld\\.test\\.web\\.GameResource:.*"
