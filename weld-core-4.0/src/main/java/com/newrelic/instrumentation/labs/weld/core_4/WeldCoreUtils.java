@@ -87,21 +87,34 @@ public class WeldCoreUtils {
 		// Skip methods explicitly ignored by customer
         if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
             NewRelic.getAgent().getLogger().log(Level.FINEST,
-				"Skipping ProxyCall instrumentation (blacklisted): {0}", fullyQualifiedMethodName);
+				"Skipping instrumentation (blacklisted): {0}", fullyQualifiedMethodName);
             return; // Skip instrumentation
         }
 
 		// FILTER 2: Check whitelist (new enhancement)
-		// When enabled, ONLY instrument methods in the whitelist
-		// When disabled, instrument everything (that passed blacklist)
-		if (!WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName)) {
+		// Determine filter type based on prefix:
+		// - ContextBean uses BeanInstance filtering
+		// - All others use ProxyCall filtering
+		boolean isContextBean = prefix != null && prefix.contains("/ContextBean/");
+		boolean shouldTrace;
+		String instrumentationType;
+
+		if (isContextBean) {
+			shouldTrace = WeldTraceFilterConfig.shouldTraceBeanInstance(cleanedClassName, methodName);
+			instrumentationType = "ContextBean";
+		} else {
+			shouldTrace = WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName);
+			instrumentationType = "ProxyCall";
+		}
+
+		if (!shouldTrace) {
 			NewRelic.getAgent().getLogger().log(Level.FINEST,
-				"Skipping ProxyCall instrumentation (not whitelisted): {0}", fullyQualifiedMethodName);
+				"Skipping {0} instrumentation (not whitelisted): {1}", instrumentationType, fullyQualifiedMethodName);
 			return; // Skip instrumentation
 		}
 
  		if(!instrumented.contains(method)) {
- 			NewRelic.getAgent().getLogger().log(Level.FINER, "Instrumenting proxy method: {0}", method.toString());
+ 			NewRelic.getAgent().getLogger().log(Level.FINER, "Instrumenting {0} method: {1}", instrumentationType, method.toString());
 			// Build metric name with cleaned class name
 			String metricName = prefix + cleanedClassName + "/" + methodName;
 			AgentBridge.instrumentation.instrument(method, metricName);
