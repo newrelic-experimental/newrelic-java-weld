@@ -1,0 +1,10 @@
+common: &default_settings
+  # Test config: Empty whitelist (trace nothing)
+  weld:
+    filtering_enabled: true
+    beaninstance:
+      track_full_names: []
+      track_regex_patterns: []
+    proxycall:
+      track_full_names: []
+      track_regex_patterns: []

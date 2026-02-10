@@ -11,6 +11,12 @@ dependencies {
    implementation 'com.newrelic.agent.java:newrelic-api:8.4.0'
    implementation fileTree(include: ['*.jar'], dir: '../libs')
    implementation fileTree(include: ['*.jar'], dir: '../test-lib')
+
+   // Test dependencies
+   testImplementation 'junit:junit:4.13.2'
+   testImplementation 'org.mockito:mockito-core:3.12.4'
+   testImplementation 'org.jboss.weld.se:weld-se-core:3.0.5.Final'
+   testImplementation 'com.newrelic.agent.java:newrelic-agent:8.4.0'
 }
 
 jar {

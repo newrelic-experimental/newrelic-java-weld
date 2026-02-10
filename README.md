@@ -31,6 +31,7 @@ This instrumentation serves as a custom extension for the New Relic Java Agent, 
 ## Configuration [optional]
 
 These settings are necessary only if you wish to exclude specific classes and methods from instrumentation. You can configure this via your `newrelic.yml` file under the common section.
+The Complete details are available at [Configuration](https://github.com/newrelic-experimental/newrelic-java-weld/blob/main/CONFIGURATION.md) 
 
 ```yaml
 # newrelic.yml

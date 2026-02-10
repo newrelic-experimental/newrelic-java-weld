@@ -1,0 +1,4 @@
+common: &default_settings
+  # Test config: Filtering disabled (trace everything)
+  weld:
+    filtering_enabled: false

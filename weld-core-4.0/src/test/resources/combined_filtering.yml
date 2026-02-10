@@ -1,0 +1,19 @@
+common: &default_settings
+  # Test config: Both blacklist and whitelist
+  weld:
+    # Old blacklist (backward compat)
+    ignore_traces_enabled: true
+    ignored_trace_patterns:
+      - "com.newrelic.weld.test.web.Game:isGameLost"
+      - "com.newrelic.weld.test.web.Game:isGameWon"
+
+    # New whitelist
+    filtering_enabled: true
+    beaninstance:
+      track_regex_patterns:
+        - "com\\.newrelic\\.weld\\.test\\.web\\.Game:check"
+        - "com\\.newrelic\\.weld\\.test\\.web\\.Game:reset"
+        - "com\\.newrelic\\.weld\\.test\\.web\\.Game:setGuess"
+    proxycall:
+      track_regex_patterns:
+        - "com\\.newrelic\\.weld\\.test\\.web\\..*:.*"

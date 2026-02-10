@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import com.newrelic.agent.bridge.AgentBridge;
 import com.newrelic.api.agent.NewRelic;
 import com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfig;
+import com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfig;
 
 public class WeldCoreUtils {
 
@@ -76,17 +77,47 @@ public class WeldCoreUtils {
 		if(name.startsWith("weld_")) return;
 		int modifiers = method.getModifiers();
 		if(Modifier.isPrivate(modifiers)) return;
-		
-		
-		// NEW: Check if this method should be ignored dynamically
-        String fullyQualifiedMethodName = method.getDeclaringClass().getName() + ":" + method.getName();
+
+		String className = method.getDeclaringClass().getName();
+		String cleanedClassName = cleanProxyClassName(className);
+		String methodName = method.getName();
+		String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
+
+		// FILTER 1: Check blacklist (existing - backward compatible)
+		// Skip methods explicitly ignored by customer
         if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+            NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping instrumentation (blacklisted): {0}", fullyQualifiedMethodName);
             return; // Skip instrumentation
         }
 
+		// FILTER 2: Check whitelist (new enhancement)
+		// Determine filter type based on prefix:
+		// - ContextBean uses BeanInstance filtering
+		// - All others use ProxyCall filtering
+		boolean isContextBean = prefix != null && prefix.contains("/ContextBean/");
+		boolean shouldTrace;
+		String instrumentationType;
+
+		if (isContextBean) {
+			shouldTrace = WeldTraceFilterConfig.shouldTraceBeanInstance(cleanedClassName, methodName);
+			instrumentationType = "ContextBean";
+		} else {
+			shouldTrace = WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName);
+			instrumentationType = "ProxyCall";
+		}
+
+		if (!shouldTrace) {
+			NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping {0} instrumentation (not whitelisted): {1}", instrumentationType, fullyQualifiedMethodName);
+			return; // Skip instrumentation
+		}
+
  		if(!instrumented.contains(method)) {
- 			NewRelic.getAgent().getLogger().log(Level.FINER, "Instrumenting proxy method: {0}", method.toString());
-			AgentBridge.instrumentation.instrument(method, prefix);
+ 			NewRelic.getAgent().getLogger().log(Level.FINER, "Instrumenting {0} method: {1}", instrumentationType, method.toString());
+			// Build metric name with cleaned class name
+			String metricName = prefix + cleanedClassName + "/" + methodName;
+			AgentBridge.instrumentation.instrument(method, metricName);
             instrumented.add(method); // Add to instrumented set AFTER successful instrumentation
 		}
 	}
