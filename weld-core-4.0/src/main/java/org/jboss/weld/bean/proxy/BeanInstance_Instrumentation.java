@@ -11,6 +11,7 @@ import com.newrelic.agent.tracers.TracerFlags;
 import com.newrelic.api.agent.weaver.MatchType;
 import com.newrelic.api.agent.weaver.Weave;
 import com.newrelic.api.agent.weaver.Weaver;
+import com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfig;
 import com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfig;
 import com.newrelic.instrumentation.labs.weld.core_4.WeldCoreUtils;
 
@@ -28,8 +29,11 @@ public class BeanInstance_Instrumentation {
 			String cleanedClassName = WeldCoreUtils.cleanProxyClassName(className);
 			String methodName = method.getName();
 
-			// Check whitelist filter (use cleaned class name)
-			if (WeldTraceFilterConfig.shouldTraceBeanInstance(cleanedClassName, methodName)) {
+			String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
+
+			// Check blacklist first — highest priority, suppresses regardless of whitelist
+			if (!TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)
+					&& WeldTraceFilterConfig.shouldTraceBeanInstance(cleanedClassName, methodName)) {
 				// Build metric name with cleaned class name
 				String metricName = MessageFormat.format(
 					"Custom/Weld/BeanInstance/{0}/invoke/{1}/{2}",
