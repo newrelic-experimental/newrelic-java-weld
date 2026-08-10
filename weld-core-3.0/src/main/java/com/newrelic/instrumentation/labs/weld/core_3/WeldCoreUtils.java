@@ -4,9 +4,13 @@ package com.newrelic.instrumentation.labs.weld.core_3;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 
 import com.newrelic.agent.bridge.AgentBridge;
+import com.newrelic.agent.bridge.ExitTracer;
+import com.newrelic.agent.tracers.ClassMethodSignature;
+import com.newrelic.agent.tracers.ClassMethodSignatures;
 import com.newrelic.api.agent.NewRelic;
 import com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfig;
 import com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfig;
@@ -16,6 +20,81 @@ public class WeldCoreUtils {
 	private static final HashSet<Method> instrumented = new HashSet<Method>();
 	private static final HashSet<String> ignoredMethods = new HashSet<String>();
 	private static final HashSet<String> instrumentedClasses = new HashSet<String>();
+
+	// Per-thread tracking of active ProxyCall signatures to deduplicate spans when
+	// Weld's interceptor chain calls proceed() multiple times for the same method.
+	private static final ThreadLocal<Set<String>> activeProxyCalls =
+		ThreadLocal.withInitial(HashSet::new);
+
+	/**
+	 * Claims a ProxyCall trace slot for the given signature on this thread.
+	 * Returns true if this is the outermost call (tracer should be created).
+	 * Returns false if a tracer for this signature is already active (re-entry).
+	 */
+	public static boolean claimProxyCallTrace(String signature) {
+		return activeProxyCalls.get().add(signature);
+	}
+
+	/**
+	 * Releases the ProxyCall trace slot. Must be called in a finally block.
+	 */
+	public static void releaseProxyCallTrace(String signature) {
+		activeProxyCalls.get().remove(signature);
+	}
+
+	public static ExitTracer createProxyCallTracer(Object callerClass, Method targetMethod) {
+		if (targetMethod == null) return null;
+
+		Class<?> declaringClass = targetMethod.getDeclaringClass();
+		String methodName = targetMethod.getName();
+		if (declaringClass == null || methodName == null) return null;
+
+		String cleanedClassName = cleanProxyClassName(declaringClass.getName());
+		String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
+
+		if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+			NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping ProxyCall trace (blacklisted): {0}", fullyQualifiedMethodName);
+			return null;
+		}
+
+		if (!WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName)) {
+			NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping ProxyCall trace (not whitelisted): {0}", fullyQualifiedMethodName);
+			return null;
+		}
+
+		if (!claimProxyCallTrace(fullyQualifiedMethodName)) {
+			NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping duplicate ProxyCall span (interceptor chain re-entry): {0}", fullyQualifiedMethodName);
+			return null;
+		}
+
+		String descriptor = "()Ljava/lang/Object;";
+		ClassMethodSignature sig = new ClassMethodSignature(callerClass.getClass().getName(), "proceed", descriptor);
+		int index = ClassMethodSignatures.get().getIndex(sig);
+		if (index == -1) {
+			index = ClassMethodSignatures.get().add(sig);
+		}
+		if (index < 0) {
+			releaseProxyCallTrace(fullyQualifiedMethodName);
+			return null;
+		}
+
+		String metricName = String.format("Custom/Weld/ProxyCall/%s/%s", cleanedClassName, methodName);
+		ExitTracer tracer = AgentBridge.instrumentation.createTracer(callerClass, index, metricName, 0);
+		if (tracer == null) {
+			releaseProxyCallTrace(fullyQualifiedMethodName);
+		}
+		return tracer;
+	}
+
+	public static void releaseProxyCallTrace(Method targetMethod) {
+		if (targetMethod == null || targetMethod.getDeclaringClass() == null) return;
+		String cleanedClassName = cleanProxyClassName(targetMethod.getDeclaringClass().getName());
+		releaseProxyCallTrace(cleanedClassName + ":" + targetMethod.getName());
+	}
+
 	public static final String CLIENTPROXY = "/Custom/Weld/ClientProxy";
 	public static final String BASEPROXY = "/Custom/Weld/";
 	

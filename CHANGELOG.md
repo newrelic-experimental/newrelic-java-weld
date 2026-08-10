@@ -1,3 +1,20 @@
+## Version: v2.1.0 | Created: 2026-08-10
+
+### Bug Fixes
+- **BeanInstance blacklist**: Added `TraceIgnoreConfig` blacklist check to `BeanInstance_Instrumentation.invoke()`. `Custom/Weld/BeanInstance/ContextBeanInstance/invoke/` spans (e.g. `ExecutableValidator`, `BeanMetaDataClassNormalizer`) were not suppressed by `ignore_traces_enabled` patterns because the blacklist check was missing from this code path.
+- **Duplicate ProxyCall spans**: Weld calls `AroundInvokeInvocationContext.proceed()` once per interceptor for the same method, producing N nested `Custom/Weld/ProxyCall` spans. Added per-thread deduplication so only the outermost `proceed()` call per method creates a tracer.
+
+### New Classes
+- `NonTerminalAroundInvokeInvocationContext_Instrumentation` (both modules): Registers the Weld 6.x concrete subclass in the weave hierarchy for correct instrumentation via inheritance.
+
+### Build
+- Updated `java.agent.version` to 9.4.0
+
+### Breaking Changes
+- None — backward compatible. Default behavior unchanged.
+
+---
+
 ## Version: [v2.0.0](https://github.com/newrelic-experimental/newrelic-java-weld/releases/tag/v2.0.0) | Created: 2026-02-04
 ### Features
 - **Whitelist Filtering**: Selectively trace only specific CDI proxy methods using exact names or regex patterns
