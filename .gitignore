@@ -6,4 +6,7 @@ bin
 .classpath
 .project
 .settings
+.gradle/
+libs/
+failed.txt
 

@@ -62,17 +62,18 @@ public class WeldCoreUtils {
 		String cleanedClassName = cleanProxyClassName(declaringClass.getName());
 		String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
-		// Filter 1: Blacklist
-		if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
-			NewRelic.getAgent().getLogger().log(Level.FINEST,
-				"Skipping ProxyCall trace (blacklisted): {0}", fullyQualifiedMethodName);
-			return null;
-		}
-
-		// Filter 2: Whitelist
+		// Filter 1: Whitelist — fast rejection for non-whitelisted methods.
+		// Checked first so non-whitelisted calls exit immediately without paying blacklist regex cost.
 		if (!WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName)) {
 			NewRelic.getAgent().getLogger().log(Level.FINEST,
 				"Skipping ProxyCall trace (not whitelisted): {0}", fullyQualifiedMethodName);
+			return null;
+		}
+
+		// Filter 2: Blacklist — only runs for whitelisted methods (small set).
+		if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+			NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping ProxyCall trace (blacklisted): {0}", fullyQualifiedMethodName);
 			return null;
 		}
 
@@ -183,18 +184,8 @@ public class WeldCoreUtils {
 		String methodName = method.getName();
 		String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
-		// FILTER 1: Check blacklist (existing - backward compatible)
-		// Skip methods explicitly ignored by customer
-        if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
-            NewRelic.getAgent().getLogger().log(Level.FINEST,
-				"Skipping instrumentation (blacklisted): {0}", fullyQualifiedMethodName);
-            return; // Skip instrumentation
-        }
-
-		// FILTER 2: Check whitelist (new enhancement)
-		// Determine filter type based on prefix:
-		// - ContextBean uses BeanInstance filtering
-		// - All others use ProxyCall filtering
+		// FILTER 1: Whitelist — fast rejection. Non-whitelisted methods exit immediately
+		// without paying blacklist regex cost. This is the common case for most CDI calls.
 		boolean isContextBean = prefix != null && prefix.contains("/ContextBean/");
 		boolean shouldTrace;
 		String instrumentationType;
@@ -212,6 +203,13 @@ public class WeldCoreUtils {
 				"Skipping {0} instrumentation (not whitelisted): {1}", instrumentationType, fullyQualifiedMethodName);
 			return; // Skip instrumentation
 		}
+
+		// FILTER 2: Blacklist — only runs for whitelisted methods (small set).
+		if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+            NewRelic.getAgent().getLogger().log(Level.FINEST,
+				"Skipping instrumentation (blacklisted): {0}", fullyQualifiedMethodName);
+            return; // Skip instrumentation
+        }
 
  		if(!instrumented.contains(method)) {
  			NewRelic.getAgent().getLogger().log(Level.FINER, "Instrumenting {0} method: {1}", instrumentationType, method.toString());

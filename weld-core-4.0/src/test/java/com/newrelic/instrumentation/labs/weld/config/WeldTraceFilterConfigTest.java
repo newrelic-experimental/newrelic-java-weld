@@ -305,4 +305,119 @@ public class WeldTraceFilterConfigTest {
         assertFalse("ProxyCall should NOT trace check",
             WeldTraceFilterConfig.shouldTraceProxyCall("com.example.Game", "check"));
     }
+
+    /**
+     * Test 11: Illumina v2.0.3 — Negative Lookahead Pattern
+     *
+     * Validates the single-pattern config recommended for Robbe's Test 11:
+     *   "com\\.illumina\\.ica\\.cp\\.(?!supportive\\.security\\.internal\\.security\\.).*:.*"
+     *
+     * Must TRACE (application proxy calls):
+     *   rest.*, core.*, shared.*
+     *   supportive.security.internal.rbac.*
+     *   supportive.security.internal.repositories.*
+     *   supportive.security.internal.platformauth.*
+     *   supportive.security.internal.entitlement.*
+     *   supportive.staticdata.*
+     *
+     * Must NOT TRACE (framework security noise — fires 500+ times per list request):
+     *   supportive.security.internal.security.MasterTenantService
+     *   supportive.security.internal.security.SecurityHelper
+     *   supportive.security.internal.security.SecurityManagerFacade
+     *   supportive.security.internal.security.DefaultActionSecurityManager
+     *   supportive.security.internal.security.SecurityService
+     *   supportive.security.internal.security.project.*
+     *   supportive.security.internal.security.rbac.*
+     *   supportive.security.internal.security.platformauth.sync.*
+     */
+    @Test
+    public void testIlluminaTest11_NegativeLookaheadPattern() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+        when(mockConfig.getValue("weld.proxycall.track_full_names"))
+            .thenReturn(Collections.emptyList());
+        when(mockConfig.getValue("weld.proxycall.track_regex_patterns"))
+            .thenReturn(Arrays.asList(
+                "com\\.illumina\\.ica\\.cp\\.(?!supportive\\.security\\.internal\\.security\\.).*:.*"
+            ));
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Collections.emptyList());
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Arrays.asList(
+                "com\\.illumina\\.ica\\.cp\\.(?!supportive\\.security\\.internal\\.security\\.).*:.*"
+            ));
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // --- Must TRACE (application proxy calls) ---
+        assertTrue("Should trace REST endpoint",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.rest.v3.publicapi.endpoints.ProjectDataApi", "a_getProjectData"));
+        assertTrue("Should trace core service",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.core.project.internal.projects.ProjectService", "getProjectById"));
+        assertTrue("Should trace shared CRUDService",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.shared.internal.persistence.CRUDService", "findByUniqueIdentifier"));
+        assertTrue("Should trace supportive staticdata (not in excluded subtree)",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.staticdata.internal.dataformat.DataFormatService", "getDataFormatByCode"));
+        assertTrue("Should trace supportive rbac (rbac != security.internal.security)",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.rbac.RbacService", "getUserRbacProfilesForUser"));
+        assertTrue("Should trace supportive repositories",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.repositories.app.AppRepository", "getByAppName"));
+        assertTrue("Should trace supportive platformauth",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.platformauth.PlatformAuthService", "convertApiKeyIntoJwt"));
+        assertTrue("Should trace supportive entitlement",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.entitlement.SecurityEntitlementService", "getAllActiveActivationCodes"));
+
+        // --- Must NOT TRACE (security.internal.security.* framework noise) ---
+        assertFalse("Must NOT trace MasterTenantService (fires 296x per list request)",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.MasterTenantService", "isMasterTenant"));
+        assertFalse("Must NOT trace SecurityHelper",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.SecurityHelper", "isMasterTenant"));
+        assertFalse("Must NOT trace SecurityManagerFacade",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.SecurityManagerFacade", "isFetchAllowed"));
+        assertFalse("Must NOT trace DefaultActionSecurityManager",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.DefaultActionSecurityManager", "isFetchAllowed"));
+        assertFalse("Must NOT trace SecurityService (45x per request)",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.SecurityService", "getTenantById"));
+        assertFalse("Must NOT trace nested security.internal.security.project.*",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.project.ProjectPermissionService", "getAccessLevel"));
+        assertFalse("Must NOT trace nested security.internal.security.rbac.*",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.rbac.RbacService", "getUserRbacProfilesForUser"));
+        assertFalse("Must NOT trace nested security.internal.security.platformauth.sync.*",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "com.illumina.ica.cp.supportive.security.internal.security.platformauth.sync.SyncedUserProvider", "getSyncedUser"));
+
+        // --- Must NOT TRACE (non-illumina framework classes — not in whitelist at all) ---
+        assertFalse("Must NOT trace javax.validation (not illumina.ica.cp)",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "javax.validation.executable.ExecutableValidator", "validateReturnValue"));
+        assertFalse("Must NOT trace org.jboss.weld internals",
+            WeldTraceFilterConfig.shouldTraceProxyCall(
+                "org.jboss.weld.bean.proxy.InterceptorMethodHandler", "invoke"));
+
+        // --- BeanInstance mirror (same pattern applied to beaninstance) ---
+        assertTrue("BeanInstance: should trace core service",
+            WeldTraceFilterConfig.shouldTraceBeanInstance(
+                "com.illumina.ica.cp.core.project.internal.projects.ProjectService", "getProjectById"));
+        assertFalse("BeanInstance: must NOT trace MasterTenantService",
+            WeldTraceFilterConfig.shouldTraceBeanInstance(
+                "com.illumina.ica.cp.supportive.security.internal.security.MasterTenantService", "isMasterTenant"));
+        assertFalse("BeanInstance: must NOT trace javax.validation noise",
+            WeldTraceFilterConfig.shouldTraceBeanInstance(
+                "javax.validation.executable.ExecutableValidator", "validateReturnValue"));
+    }
 }

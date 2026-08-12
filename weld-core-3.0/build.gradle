@@ -10,13 +10,14 @@ dependencies {
    implementation 'com.newrelic.agent.java:newrelic-agent:' + project.findProperty('java.agent.version')
    implementation 'com.newrelic.agent.java:newrelic-api:' + project.findProperty('java.agent.version')
    implementation 'com.newrelic.agent.java:agent-bridge:' + project.findProperty('java.agent.version')
+   implementation fileTree(include: ['*.jar'], dir: '../libs')
    implementation fileTree(include: ['*.jar'], dir: '../test-lib')
 
    // Test dependencies
    testImplementation 'junit:junit:4.13.2'
    testImplementation 'org.mockito:mockito-core:3.12.4'
    testImplementation 'org.jboss.weld.se:weld-se-core:3.0.5.Final'
-   testImplementation 'com.newrelic.agent.java:newrelic-agent:8.4.0'
+   testImplementation 'com.newrelic.agent.java:newrelic-agent:' + project.findProperty('java.agent.version')
 }
 
 jar {
@@ -24,7 +25,7 @@ jar {
     attributes 'Implementation-Title': 'com.newrelic.instrumentation.labs.weld-core-3.0'
     attributes 'Implementation-Vendor': 'New Relic Labs'
     attributes 'Implementation-Vendor-Id': 'com.newrelic.labs'
-    attributes 'Implementation-Version': 2.1
+    attributes 'Implementation-Version': '2.0.3'
   }
 }
 
