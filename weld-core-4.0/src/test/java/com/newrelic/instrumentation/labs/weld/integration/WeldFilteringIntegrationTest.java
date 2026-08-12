@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
  * Note: For multiple configurations, create separate test classes with different configName values.
  */
 @RunWith(InstrumentationTestRunner.class)
-@InstrumentationTestConfig(includePrefixes = {"org.jboss.weld", "com.newrelic.weld.test"},
+@InstrumentationTestConfig(includePrefixes = {"org.jboss.weld.bean.proxy", "com.newrelic.weld.test"},
                            configName = "beaninstance_whitelist.yml")
 public class WeldFilteringIntegrationTest {
 

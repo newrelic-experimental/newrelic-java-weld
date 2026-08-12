@@ -1,3 +1,16 @@
+## Version: v2.0.3 | Created: 2026-08-12
+
+### Performance Fix
+- **Filter order corrected in `WeldCoreUtils.addMethod()`**: Whitelist check now runs before blacklist in both `weld-core-3.0` and `weld-core-4.0`. Non-whitelisted methods exit immediately without paying the regex cost of the blacklist check. Previously the blacklist ran first for every CDI method at class-instrumentation time (startup), though the hot-path methods `BeanInstance_Instrumentation.invoke()` and `WeldCoreUtils.createProxyCallTracer()` were already correct from v2.1.0.
+
+### Build
+- All three modules (`weld-core-3.0`, `weld-core-4.0`, `weld-ejb`) bumped to `Implementation-Version: 2.0.3` (quoted string to avoid Gradle float coercion).
+
+### Breaking Changes
+- None — backward compatible.
+
+---
+
 ## Version: v2.1.0 | Created: 2026-08-10
 
 ### Bug Fixes

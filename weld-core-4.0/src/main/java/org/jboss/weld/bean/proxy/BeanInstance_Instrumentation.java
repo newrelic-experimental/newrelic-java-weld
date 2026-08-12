@@ -31,9 +31,9 @@ public class BeanInstance_Instrumentation {
 
 			String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
-			// Check blacklist first — highest priority, suppresses regardless of whitelist
-			if (!TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)
-					&& WeldTraceFilterConfig.shouldTraceBeanInstance(cleanedClassName, methodName)) {
+			// Whitelist first — fast rejection. Blacklist only runs for whitelisted methods.
+			if (WeldTraceFilterConfig.shouldTraceBeanInstance(cleanedClassName, methodName)
+					&& !TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
 				// Build metric name with cleaned class name
 				String metricName = MessageFormat.format(
 					"Custom/Weld/BeanInstance/{0}/invoke/{1}/{2}",
