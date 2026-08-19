@@ -1,3 +1,38 @@
+## Version: v2.5 | Created: 2026-08-19
+
+### Performance Fix — Root Cause of Test 11/12 Residual Span Overhead
+
+`CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation`, `InterceptorMethodHandler_Instrumentation`, and `StackAwareMethodHandler_Instrumentation` (weld-core-3.0) previously used unconditional `@Trace` annotations on their `invoke()` methods.
+
+**Problem**: A `@Trace` span is created by the NR agent BEFORE any Java code in the annotated method executes. This means the whitelist/blacklist config was never consulted — spans were created for every CDI call including high-frequency security framework classes (`MasterTenantService`, `SecurityHelper`, etc.) that the whitelist was supposed to suppress. This was confirmed by T11/T12 trace analysis:
+- ProxyCall spans for `security.internal.security.*` = **0** ✓ (whitelist working via ExitTracer)
+- StackAwareMethodHandler + InterceptorMethodHandler spans for same classes = **960** ✗ (not filtered, `@Trace`)
+- Total residual security noise = **1,640 / 3,002 spans (54%)** — unchanged between T11 and T12
+
+**Fix** (both modules): Replaced `@Trace` with conditional `ExitTracer` (same pattern as `BeanInstance_Instrumentation.invoke()`). ExitTracer is only created when `shouldTraceProxyCall() && !shouldIgnoreTrace()` pass. Non-whitelisted classes produce **zero spans** from these weave points.
+
+**Expected result for T13**:
+- security.internal.security.* StackAwareMethodHandler spans: 0 (was ~480)
+- security.internal.security.* InterceptorMethodHandler spans: 0 (was ~480)
+- Java/CombinedInterceptorAndDecoratorStackMethodHandler spans for filtered classes: 0 (was ~480)
+- EJB spans for security.* (NR built-in): unchanged (~680) — requires `class_transformer.excludes`
+- Estimated net span count: **~1,600 (47% below T12 baseline of 3,002)**
+
+### Files Changed
+- `weld-core-4.0/.../CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation.java`
+- `weld-core-4.0/.../InterceptorMethodHandler_Instrumentation.java`
+- `weld-core-3.0/.../StackAwareMethodHandler_Instrumentation.java`
+- `weld-core-3.0/.../CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation.java`
+- `weld-core-3.0/.../InterceptorMethodHandler_Instrumentation.java`
+
+### Build
+- All three modules bumped to `Implementation-Version: 2.5` (single decimal visible in NR UI)
+
+### Breaking Changes
+- None — behavior for whitelisted methods is unchanged. Only non-whitelisted methods lose StackAwareMethodHandler/InterceptorMethodHandler spans.
+
+---
+
 ## Version: v2.0.3 | Created: 2026-08-12
 
 ### Performance Fix
