@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run JUnit tests and display summary
+# Run all JUnit tests and display a per-class summary
 # Usage: ./run-tests.sh
 
 set -e
@@ -10,21 +10,74 @@ echo "Running Weld Instrumentation Unit Tests"
 echo "========================================"
 echo ""
 
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Run tests for weld-core-3.0
+# Test classes to run for each module (WeldFilteringIntegrationTest excluded — known Weld SE classloader issue)
+TEST_CLASSES=(
+    "com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest"
+    "com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfigTest"
+    "com.newrelic.instrumentation.labs.weld.core_3.WeldCoreUtilsTest"
+)
+TEST_CLASSES_4=(
+    "com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest"
+    "com.newrelic.instrumentation.labs.weld.config.TraceIgnoreConfigTest"
+    "com.newrelic.instrumentation.labs.weld.core_4.WeldCoreUtilsTest"
+)
+
+summarise_module() {
+    local MODULE="$1"
+    local RESULT_DIR="${MODULE}/build/test-results/test"
+    local TOTAL=0 FAILURES=0 ERRORS=0
+
+    echo "${MODULE}:"
+    if [ ! -d "${RESULT_DIR}" ]; then
+        echo -e "  ${RED}No test results found${NC}"
+        return 1
+    fi
+
+    for xml in "${RESULT_DIR}"/*.xml; do
+        [ -f "$xml" ] || continue
+        cls=$(grep -o 'name="[^"]*"' "$xml" | head -1 | cut -d'"' -f2)
+        t=$(grep -o 'tests="[0-9]*"' "$xml" | head -1 | cut -d'"' -f2)
+        f=$(grep -o 'failures="[0-9]*"' "$xml" | head -1 | cut -d'"' -f2)
+        e=$(grep -o 'errors="[0-9]*"' "$xml" | head -1 | cut -d'"' -f2)
+        TOTAL=$((TOTAL + ${t:-0}))
+        FAILURES=$((FAILURES + ${f:-0}))
+        ERRORS=$((ERRORS + ${e:-0}))
+        if [ "${f:-0}" -eq 0 ] && [ "${e:-0}" -eq 0 ]; then
+            echo -e "  ${GREEN}✓ PASS${NC}  ${cls} (${t:-0} tests)"
+        else
+            echo -e "  ${RED}✗ FAIL${NC}  ${cls} (${t:-0} tests, ${f:-0} failures, ${e:-0} errors)"
+        fi
+    done
+
+    echo "  ─────────────────────────────"
+    if [ "$FAILURES" -eq 0 ] && [ "$ERRORS" -eq 0 ]; then
+        echo -e "  ${GREEN}Total: ${TOTAL} tests, all passed${NC}"
+    else
+        echo -e "  ${RED}Total: ${TOTAL} tests, ${FAILURES} failures, ${ERRORS} errors${NC}"
+    fi
+    echo ""
+
+    [ "$FAILURES" -eq 0 ] && [ "$ERRORS" -eq 0 ]
+}
+
+# Build test classes args for each module
+TESTS_3=""
+for c in "${TEST_CLASSES[@]}"; do TESTS_3="${TESTS_3} --tests \"${c}\""; done
+TESTS_4=""
+for c in "${TEST_CLASSES_4[@]}"; do TESTS_4="${TESTS_4} --tests \"${c}\""; done
+
 echo "Running tests for weld-core-3.0..."
-./gradlew :weld-core-3.0:test --tests "com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest" --console=plain > /tmp/weld-test-3.0.log 2>&1
-RESULT_3_0=$?
+eval "./gradlew :weld-core-3.0:cleanTest :weld-core-3.0:test ${TESTS_3} --console=plain" > /tmp/weld-test-3.0.log 2>&1
+R3=$?
 
-# Run tests for weld-core-4.0
 echo "Running tests for weld-core-4.0..."
-./gradlew :weld-core-4.0:test --tests "com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest" --console=plain > /tmp/weld-test-4.0.log 2>&1
-RESULT_4_0=$?
+eval "./gradlew :weld-core-4.0:cleanTest :weld-core-4.0:test ${TESTS_4} --console=plain" > /tmp/weld-test-4.0.log 2>&1
+R4=$?
 
 echo ""
 echo "========================================"
@@ -32,74 +85,21 @@ echo "Test Results Summary"
 echo "========================================"
 echo ""
 
-# Parse weld-core-3.0 results
-if [ -f "weld-core-3.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml" ]; then
-    TESTS_3_0=$(grep -o 'tests="[0-9]*"' weld-core-3.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
-    FAILURES_3_0=$(grep -o 'failures="[0-9]*"' weld-core-3.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
-    ERRORS_3_0=$(grep -o 'errors="[0-9]*"' weld-core-3.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
-    TIME_3_0=$(grep -o 'time="[0-9.]*"' weld-core-3.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
+summarise_module "weld-core-3.0" && S3=0 || S3=1
+summarise_module "weld-core-4.0" && S4=0 || S4=1
 
-    echo "weld-core-3.0:"
-    echo "  Tests:    $TESTS_3_0"
-    echo "  Failures: $FAILURES_3_0"
-    echo "  Errors:   $ERRORS_3_0"
-    echo "  Time:     ${TIME_3_0}s"
-
-    if [ "$FAILURES_3_0" -eq 0 ] && [ "$ERRORS_3_0" -eq 0 ]; then
-        echo -e "  Status:   ${GREEN}✓ PASSED${NC}"
-    else
-        echo -e "  Status:   ${RED}✗ FAILED${NC}"
-    fi
-else
-    echo -e "weld-core-3.0: ${RED}✗ NO RESULTS FOUND${NC}"
-    RESULT_3_0=1
-fi
-
-echo ""
-
-# Parse weld-core-4.0 results
-if [ -f "weld-core-4.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml" ]; then
-    TESTS_4_0=$(grep -o 'tests="[0-9]*"' weld-core-4.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
-    FAILURES_4_0=$(grep -o 'failures="[0-9]*"' weld-core-4.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
-    ERRORS_4_0=$(grep -o 'errors="[0-9]*"' weld-core-4.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
-    TIME_4_0=$(grep -o 'time="[0-9.]*"' weld-core-4.0/build/test-results/test/TEST-com.newrelic.instrumentation.labs.weld.config.WeldTraceFilterConfigTest.xml | head -1 | cut -d'"' -f2)
-
-    echo "weld-core-4.0:"
-    echo "  Tests:    $TESTS_4_0"
-    echo "  Failures: $FAILURES_4_0"
-    echo "  Errors:   $ERRORS_4_0"
-    echo "  Time:     ${TIME_4_0}s"
-
-    if [ "$FAILURES_4_0" -eq 0 ] && [ "$ERRORS_4_0" -eq 0 ]; then
-        echo -e "  Status:   ${GREEN}✓ PASSED${NC}"
-    else
-        echo -e "  Status:   ${RED}✗ FAILED${NC}"
-    fi
-else
-    echo -e "weld-core-4.0: ${RED}✗ NO RESULTS FOUND${NC}"
-    RESULT_4_0=1
-fi
-
-echo ""
 echo "========================================"
-
-# Overall result
-if [ $RESULT_3_0 -eq 0 ] && [ $RESULT_4_0 -eq 0 ]; then
+echo ""
+if [ $S3 -eq 0 ] && [ $S4 -eq 0 ]; then
     echo -e "${GREEN}All tests passed!${NC}"
     echo ""
-    echo "Test details:"
-    echo "  weld-core-3.0: $TESTS_3_0 tests, 0 failures"
-    echo "  weld-core-4.0: $TESTS_4_0 tests, 0 failures"
-    echo ""
-    echo "View detailed reports:"
-    echo "  weld-core-3.0: file://$(pwd)/weld-core-3.0/build/reports/tests/test/index.html"
-    echo "  weld-core-4.0: file://$(pwd)/weld-core-4.0/build/reports/tests/test/index.html"
+    echo "HTML reports:"
+    echo "  file://$(pwd)/weld-core-3.0/build/reports/tests/test/index.html"
+    echo "  file://$(pwd)/weld-core-4.0/build/reports/tests/test/index.html"
     exit 0
 else
-    echo -e "${RED}Some tests failed!${NC}"
-    echo ""
-    echo "View logs:"
-    echo "  weld-core-3.0: /tmp/weld-test-3.0.log"
-    echo "  weld-core-4.0: /tmp/weld-test-4.0.log"
+    echo -e "${RED}Some tests failed! See logs:${NC}"
+    echo "  /tmp/weld-test-3.0.log"
+    echo "  /tmp/weld-test-4.0.log"
     exit 1
 fi

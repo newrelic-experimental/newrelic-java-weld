@@ -1,0 +1,8 @@
+common: &default_settings
+  # Test config: Blacklist (ignore traces) enabled with exact + wildcard patterns
+  weld:
+    ignore_traces_enabled: true
+    ignored_trace_patterns:
+      - "com.newrelic.weld.test.web.Game:isGameLost"
+      - "com.newrelic.weld.test.web.Game:isGameWon"
+      - "javax.validation.*:*"

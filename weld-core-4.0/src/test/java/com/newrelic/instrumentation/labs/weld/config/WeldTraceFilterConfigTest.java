@@ -307,6 +307,193 @@ public class WeldTraceFilterConfigTest {
     }
 
     /**
+     * Test 12: Null ClassName — Returns False When Filtering Enabled
+     */
+    @Test
+    public void testNullClassName_ReturnsFalse_WhenFilteringEnabled() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Arrays.asList("com.example.Service:login"));
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Collections.emptyList());
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // Null className → "null:login" → no match → false (no NPE)
+        assertFalse("Should return false for null className",
+            WeldTraceFilterConfig.shouldTraceBeanInstance(null, "login"));
+        assertFalse("ProxyCall should return false for null className",
+            WeldTraceFilterConfig.shouldTraceProxyCall(null, "login"));
+    }
+
+    /**
+     * Test 13: Null MethodName — Returns False When Filtering Enabled
+     */
+    @Test
+    public void testNullMethodName_ReturnsFalse_WhenFilteringEnabled() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Arrays.asList("com.example.Service:login"));
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Collections.emptyList());
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // "com.example.Service:null" → no match → false (no NPE)
+        assertFalse("Should return false for null methodName",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", null));
+        assertFalse("ProxyCall should return false for null methodName",
+            WeldTraceFilterConfig.shouldTraceProxyCall("com.example.Service", null));
+    }
+
+    /**
+     * Test 14: ProxyCall Config Does NOT Affect BeanInstance and Vice Versa
+     */
+    @Test
+    public void testProxyCallConfig_IsIndependentFrom_BeanInstance() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+
+        // Only ProxyCall configured with "getData" method
+        when(mockConfig.getValue("weld.proxycall.track_full_names"))
+            .thenReturn(Arrays.asList("com.example.Service:getData"));
+        when(mockConfig.getValue("weld.proxycall.track_regex_patterns"))
+            .thenReturn(Collections.emptyList());
+
+        // BeanInstance has NOTHING configured
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Collections.emptyList());
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Collections.emptyList());
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // ProxyCall should trace getData
+        assertTrue("ProxyCall getData should be traced",
+            WeldTraceFilterConfig.shouldTraceProxyCall("com.example.Service", "getData"));
+
+        // BeanInstance should NOT trace getData (not in its whitelist)
+        assertFalse("BeanInstance getData should NOT be traced (different whitelist)",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "getData"));
+    }
+
+    /**
+     * Test 15: Config Reload Replaces (Does Not Append) Previous Patterns
+     */
+    @Test
+    public void testConfigReload_ReplacesPatterns_NotAppends() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+
+        // Initial: trace "login" only
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Arrays.asList("com.example.Service:login"));
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Collections.emptyList());
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        assertTrue("login should be traced initially",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "login"));
+
+        // Reload: now only "logout" — "login" must be gone
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Arrays.asList("com.example.Service:logout"));
+
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        assertFalse("login should NOT be traced after reload (patterns replaced, not appended)",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "login"));
+        assertTrue("logout should be traced after reload",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "logout"));
+    }
+
+    /**
+     * Test 16: Multiple Regex Patterns — Any Match Returns True
+     */
+    @Test
+    public void testMultipleRegexPatterns_AnyMatchReturnsTrue() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Collections.emptyList());
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Arrays.asList(
+                "com\\.example\\.service\\..*:get.*",  // Pattern 1
+                "com\\.example\\.repo\\..*:find.*"     // Pattern 2
+            ));
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // Matches Pattern 1
+        assertTrue("Should trace getUser (matches pattern 1)",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.service.UserService", "getUser"));
+
+        // Matches Pattern 2
+        assertTrue("Should trace findById (matches pattern 2)",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.repo.UserRepo", "findById"));
+
+        // Matches neither
+        assertFalse("Should NOT trace saveUser (matches no pattern)",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.service.UserService", "saveUser"));
+    }
+
+    /**
+     * Test 17: Full Name Is Checked Before Regex (Short-Circuit)
+     */
+    @Test
+    public void testFullNameCheckedBeforeRegex() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+
+        // Full name: "com.example.Service:login" is in the list
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Arrays.asList("com.example.Service:login"));
+
+        // Regex: would NOT match "login" (only matches "process.*")
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Arrays.asList("com\\.example\\.Service:process.*"));
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // "login" matches full name → traced (even though regex wouldn't match it)
+        assertTrue("login should be traced via full name match",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "login"));
+
+        // "processPayment" matches regex → traced
+        assertTrue("processPayment should be traced via regex",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "processPayment"));
+
+        // "logout" matches neither → not traced
+        assertFalse("logout should NOT be traced (no match)",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "logout"));
+    }
+
+    /**
+     * Test 18: Filtering Disabled Returns True Regardless of Null Config Values
+     */
+    @Test
+    public void testFilteringDisabled_ReturnsTrue_WhenConfigValuesAreNull() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(false);
+        // No other config — getValue returns null for pattern lists
+        when(mockConfig.getValue("weld.beaninstance.track_full_names")).thenReturn(null);
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns")).thenReturn(null);
+        when(mockConfig.getValue("weld.proxycall.track_full_names")).thenReturn(null);
+        when(mockConfig.getValue("weld.proxycall.track_regex_patterns")).thenReturn(null);
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // Everything traced when disabled, even with null pattern lists
+        assertTrue("BeanInstance should trace all when disabled",
+            WeldTraceFilterConfig.shouldTraceBeanInstance("com.example.Service", "anyMethod"));
+        assertTrue("ProxyCall should trace all when disabled",
+            WeldTraceFilterConfig.shouldTraceProxyCall("com.example.Service", "anyMethod"));
+    }
+
+    /**
      * Test 11: Illumina v2.0.3 — Negative Lookahead Pattern
      *
      * Validates the single-pattern config recommended for Robbe's Test 11:
@@ -419,5 +606,134 @@ public class WeldTraceFilterConfigTest {
         assertFalse("BeanInstance: must NOT trace javax.validation noise",
             WeldTraceFilterConfig.shouldTraceBeanInstance(
                 "javax.validation.executable.ExecutableValidator", "validateReturnValue"));
+    }
+
+    // ===========================================================================================
+    // Scenario tests — equivalent to YAML config scenarios
+    // ===========================================================================================
+
+    /**
+     * Test 19: BeanInstance Whitelist Scenario (mirrors beaninstance_whitelist.yml)
+     * Full names: Game:check, Game:reset
+     * Regex: Game:get.*
+     */
+    @Test
+    public void testScenario_BeanInstanceWhitelist_YamlEquivalent() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Arrays.asList(
+                "com.newrelic.weld.test.web.Game:check",
+                "com.newrelic.weld.test.web.Game:reset"
+            ));
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Arrays.asList("com\\.newrelic\\.weld\\.test\\.web\\.Game:get.*"));
+        when(mockConfig.getValue("weld.proxycall.track_full_names"))
+            .thenReturn(Collections.emptyList());
+        when(mockConfig.getValue("weld.proxycall.track_regex_patterns"))
+            .thenReturn(Collections.emptyList());
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // BeanInstance: whitelisted (full name)
+        assertTrue("Game.check() must be traced (full name)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "check"));
+        assertTrue("Game.reset() must be traced (full name)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "reset"));
+
+        // BeanInstance: whitelisted (regex get.*)
+        assertTrue("Game.getGameStatus() must be traced (regex)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "getGameStatus"));
+        assertTrue("Game.getNumber() must be traced (regex)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "getNumber"));
+        assertTrue("Game.getRemainingGuesses() must be traced (regex)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "getRemainingGuesses"));
+
+        // BeanInstance: NOT whitelisted
+        assertFalse("Game.setGuess() must NOT be traced", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "setGuess"));
+        assertFalse("Game.isGameWon() must NOT be traced (is* != get*)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "isGameWon"));
+        assertFalse("Game.isGameLost() must NOT be traced", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "isGameLost"));
+
+        // ProxyCall: empty whitelist — nothing traced
+        assertFalse("ProxyCall check must NOT be traced (no proxycall config)", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.Game", "check"));
+        assertFalse("ProxyCall getStatus must NOT be traced", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.GameResource", "getStatus"));
+    }
+
+    /**
+     * Test 20: ProxyCall Whitelist Scenario (mirrors proxycall_whitelist.yml)
+     * Full names: GameResource:getStatus
+     * Regex: GameResource:.*
+     */
+    @Test
+    public void testScenario_ProxyCallWhitelist_YamlEquivalent() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+        when(mockConfig.getValue("weld.proxycall.track_full_names"))
+            .thenReturn(Arrays.asList("com.newrelic.weld.test.web.GameResource:getStatus"));
+        when(mockConfig.getValue("weld.proxycall.track_regex_patterns"))
+            .thenReturn(Arrays.asList("com\\.newrelic\\.weld\\.test\\.web\\.GameResource:.*"));
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Collections.emptyList());
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Collections.emptyList());
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // ProxyCall: whitelisted (full name)
+        assertTrue("GameResource.getStatus() must be traced (full name)", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.GameResource", "getStatus"));
+
+        // ProxyCall: whitelisted (regex .*)
+        assertTrue("GameResource.makeGuess() must be traced (regex)", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.GameResource", "makeGuess"));
+        assertTrue("GameResource.resetGame() must be traced (regex)", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.GameResource", "resetGame"));
+        assertTrue("GameResource.getRemainingGuesses() must be traced (regex)", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.GameResource", "getRemainingGuesses"));
+
+        // ProxyCall: NOT in whitelist (Game is not GameResource)
+        assertFalse("Game.check() must NOT be traced as ProxyCall", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.Game", "check"));
+
+        // BeanInstance: empty whitelist — nothing traced
+        assertFalse("BeanInstance check must NOT be traced (no beaninstance config)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "check"));
+        assertFalse("BeanInstance getStatus must NOT be traced", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.GameResource", "getStatus"));
+    }
+
+    /**
+     * Test 21: Combined Filtering Scenario (mirrors combined_filtering.yml)
+     * Blacklist: isGameLost, isGameWon
+     * Whitelist BeanInstance: Game:check, Game:reset, Game:setGuess (via regex)
+     * Whitelist ProxyCall: all GameResource methods (regex .*)
+     *
+     * Verifies v2.0.3 filter order: whitelist(shouldTrace) → blacklist(shouldIgnore)
+     * Non-whitelisted methods return false BEFORE blacklist is consulted.
+     *
+     * NOTE: TraceIgnoreConfig is tested separately. Here we only verify whitelist logic.
+     * The combined filter order BeanInstance_Instrumentation.invoke() is:
+     *   if (shouldTraceBeanInstance() && !shouldIgnoreTrace()) → create tracer
+     * This test validates the whitelist half of that expression.
+     */
+    @Test
+    public void testScenario_CombinedFiltering_WhitelistPart() {
+        when(mockConfig.getValue("weld.filtering_enabled")).thenReturn(true);
+        when(mockConfig.getValue("weld.beaninstance.track_regex_patterns"))
+            .thenReturn(Arrays.asList(
+                "com\\.newrelic\\.weld\\.test\\.web\\.Game:check",
+                "com\\.newrelic\\.weld\\.test\\.web\\.Game:reset",
+                "com\\.newrelic\\.weld\\.test\\.web\\.Game:setGuess"
+            ));
+        when(mockConfig.getValue("weld.beaninstance.track_full_names"))
+            .thenReturn(Collections.emptyList());
+        when(mockConfig.getValue("weld.proxycall.track_regex_patterns"))
+            .thenReturn(Arrays.asList("com\\.newrelic\\.weld\\.test\\.web\\..*:.*"));
+        when(mockConfig.getValue("weld.proxycall.track_full_names"))
+            .thenReturn(Collections.emptyList());
+
+        WeldTraceFilterConfig config = new WeldTraceFilterConfig();
+        config.configChanged("test-app", (AgentConfig) mockConfig);
+
+        // Whitelisted BeanInstance methods (would reach blacklist check)
+        assertTrue("check is whitelisted → passes whitelist", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "check"));
+        assertTrue("reset is whitelisted → passes whitelist", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "reset"));
+        assertTrue("setGuess is whitelisted → passes whitelist", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "setGuess"));
+
+        // NOT whitelisted (isGameLost/Won) — fast-rejected by whitelist, blacklist never consulted
+        assertFalse("isGameLost NOT whitelisted → false (whitelist-first, blacklist never reached)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "isGameLost"));
+        assertFalse("isGameWon NOT whitelisted → false (whitelist-first, blacklist never reached)", WeldTraceFilterConfig.shouldTraceBeanInstance("com.newrelic.weld.test.web.Game", "isGameWon"));
+
+        // ProxyCall: all GameResource and Game methods whitelisted
+        assertTrue("GameResource.getStatus() whitelisted", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.GameResource", "getStatus"));
+        assertTrue("Game.check() whitelisted as ProxyCall", WeldTraceFilterConfig.shouldTraceProxyCall("com.newrelic.weld.test.web.Game", "check"));
     }
 }
