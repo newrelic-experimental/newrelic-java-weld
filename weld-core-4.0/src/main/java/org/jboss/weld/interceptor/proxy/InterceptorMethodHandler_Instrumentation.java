@@ -99,10 +99,9 @@ public class InterceptorMethodHandler_Instrumentation {
 		String cleanedClassName = WeldCoreUtils.cleanProxyClassName(
 			proceed.getDeclaringClass().getName());
 		String methodName = proceed.getName();
-		String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
 		if (!WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName)
-				|| TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+				|| TraceIgnoreConfig.shouldIgnoreTrace(cleanedClassName, methodName)) {
 			return null;
 		}
 

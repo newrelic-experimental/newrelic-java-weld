@@ -5,7 +5,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import com.newrelic.agent.bridge.AgentBridge;
 import com.newrelic.agent.bridge.ExitTracer;
@@ -50,21 +52,24 @@ public class WeldCoreUtils {
 		if (declaringClass == null || methodName == null) return null;
 
 		String cleanedClassName = cleanProxyClassName(declaringClass.getName());
-		String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
-		// Whitelist first — fast rejection for non-whitelisted calls (no blacklist regex cost)
+		// Whitelist first — fast rejection for non-whitelisted calls (no blacklist regex cost,
+		// and no "class:method" key allocation below until a call actually reaches the small
+		// whitelisted set).
 		if (!WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName)) {
 			NewRelic.getAgent().getLogger().log(Level.FINEST,
-				"Skipping ProxyCall trace (not whitelisted): {0}", fullyQualifiedMethodName);
+				"Skipping ProxyCall trace (not whitelisted): {0}:{1}", cleanedClassName, methodName);
 			return null;
 		}
 
 		// Blacklist only runs for whitelisted methods (small set)
-		if (TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+		if (TraceIgnoreConfig.shouldIgnoreTrace(cleanedClassName, methodName)) {
 			NewRelic.getAgent().getLogger().log(Level.FINEST,
-				"Skipping ProxyCall trace (blacklisted): {0}", fullyQualifiedMethodName);
+				"Skipping ProxyCall trace (blacklisted): {0}:{1}", cleanedClassName, methodName);
 			return null;
 		}
+
+		String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
 		if (!claimProxyCallTrace(fullyQualifiedMethodName)) {
 			NewRelic.getAgent().getLogger().log(Level.FINEST,
@@ -100,7 +105,12 @@ public class WeldCoreUtils {
 	public static final String CLIENTPROXY = "/Custom/Weld/ClientProxy";
 	public static final String BASEPROXY = "/Custom/Weld/";
 	
-	 private static final String PROXY_SUFFIX_REGEX = "\\$.*?Subclass"; // Matches $...Subclass (case-insensitive, non-greedy)
+	 private static final Pattern PROXY_SUFFIX_PATTERN = Pattern.compile("\\$.*?Subclass"); // Matches $...Subclass (case-insensitive, non-greedy)
+
+	 // cleanProxyClassName is called on every CDI proxy/interceptor dispatch (StackAwareMethodHandler,
+	 // InterceptorMethodHandler, CombinedInterceptorAndDecoratorStackMethodHandler). Caching by raw
+	 // class name keeps the regex cost to once per distinct proxy class instead of once per call.
+	 private static final ConcurrentHashMap<String, String> CLEAN_NAME_CACHE = new ConcurrentHashMap<>();
 
 	    /**
 	     * Cleans up a class name by removing Weld-specific proxy suffixes (e.g., "$Proxy$_$$_WeldSubclass").
@@ -121,14 +131,19 @@ public class WeldCoreUtils {
 	            return className;
 	        }
 
-	        // Use regex for robust and case-insensitive matching
-	        String cleanedName = className.replaceAll(PROXY_SUFFIX_REGEX, "");
+	        String cached = CLEAN_NAME_CACHE.get(className);
+	        if (cached != null) {
+	            return cached;
+	        }
+
+	        String cleanedName = PROXY_SUFFIX_PATTERN.matcher(className).replaceAll("");
 
 	        // Log if a change was made for debugging
 	        if (!cleanedName.equals(className)) {
 	            NewRelic.getAgent().getLogger().log(Level.FINEST, "Cleaned Weld proxy class name: '{0}' -> '{1}'", className, cleanedName);
 	        }
 
+	        CLEAN_NAME_CACHE.put(className, cleanedName);
 	        return cleanedName;
 	    }
 	    

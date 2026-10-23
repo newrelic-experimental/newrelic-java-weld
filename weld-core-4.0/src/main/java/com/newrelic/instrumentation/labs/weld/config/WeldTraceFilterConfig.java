@@ -10,6 +10,7 @@ import com.newrelic.api.agent.NewRelic;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -41,6 +42,15 @@ public class WeldTraceFilterConfig implements AgentConfigListener {
     // ProxyCall configuration keys
     private static final String PROXY_FULL_NAMES_KEY = CONFIG_NAMESPACE + ".proxycall.track_full_names";
     private static final String PROXY_REGEX_PATTERNS_KEY = CONFIG_NAMESPACE + ".proxycall.track_regex_patterns";
+
+    // shouldTraceProxyCall/shouldTraceBeanInstance run on every CDI proxy/interceptor dispatch,
+    // whitelisted or not. Nested by className then methodName so the hot path can look the
+    // decision up directly from the (already-cached, already-hashed) class/method name Strings
+    // the caller holds, instead of allocating and hashing a fresh "class:method" String on every
+    // call just to use it as a cache key. The concatenated key is only built on a cache miss, to
+    // feed the regex matchers below. Cleared on config reload.
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<String, Boolean>> proxyCallDecisionCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<String, Boolean>> beanInstanceDecisionCache = new ConcurrentHashMap<>();
 
     // State - BeanInstance
     private static volatile boolean filteringEnabled = false;
@@ -104,6 +114,10 @@ public class WeldTraceFilterConfig implements AgentConfigListener {
     }
 
     private void loadConfig(Config config) {
+        // Decisions cached under the old config are no longer valid once patterns change.
+        proxyCallDecisionCache.clear();
+        beanInstanceDecisionCache.clear();
+
         // Load filtering enabled flag
         Boolean enabled = config.getValue(FILTERING_ENABLED_KEY);
         if (enabled != null) {
@@ -204,9 +218,25 @@ public class WeldTraceFilterConfig implements AgentConfigListener {
             return true;
         }
 
-        // Build fully qualified method name
-        String fullyQualifiedMethodName = className + ":" + methodName;
+        // ConcurrentHashMap rejects null keys — null class/method is an edge case,
+        // not the hot path, so skip the cache rather than guard every map op.
+        if (className == null || methodName == null) {
+            return computeShouldTraceBeanInstance(className + ":" + methodName);
+        }
 
+        ConcurrentHashMap<String, Boolean> methodCache =
+            beanInstanceDecisionCache.computeIfAbsent(className, c -> new ConcurrentHashMap<>());
+        Boolean cached = methodCache.get(methodName);
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean result = computeShouldTraceBeanInstance(className + ":" + methodName);
+        methodCache.put(methodName, result);
+        return result;
+    }
+
+    private static boolean computeShouldTraceBeanInstance(String fullyQualifiedMethodName) {
         // Check full name match (exact match)
         if (beanFullNames.contains(fullyQualifiedMethodName)) {
             log(Level.FINEST, "New Relic WeldTraceFilterConfig: BeanInstance matched full name: {0}", fullyQualifiedMethodName);
@@ -240,9 +270,25 @@ public class WeldTraceFilterConfig implements AgentConfigListener {
             return true;
         }
 
-        // Build fully qualified method name
-        String fullyQualifiedMethodName = className + ":" + methodName;
+        // ConcurrentHashMap rejects null keys — null class/method is an edge case,
+        // not the hot path, so skip the cache rather than guard every map op.
+        if (className == null || methodName == null) {
+            return computeShouldTraceProxyCall(className + ":" + methodName);
+        }
 
+        ConcurrentHashMap<String, Boolean> methodCache =
+            proxyCallDecisionCache.computeIfAbsent(className, c -> new ConcurrentHashMap<>());
+        Boolean cached = methodCache.get(methodName);
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean result = computeShouldTraceProxyCall(className + ":" + methodName);
+        methodCache.put(methodName, result);
+        return result;
+    }
+
+    private static boolean computeShouldTraceProxyCall(String fullyQualifiedMethodName) {
         // Check full name match (exact match)
         if (proxyFullNames.contains(fullyQualifiedMethodName)) {
             log(Level.FINEST, "New Relic WeldTraceFilterConfig: ProxyCall matched full name: {0}", fullyQualifiedMethodName);

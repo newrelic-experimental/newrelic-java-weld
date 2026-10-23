@@ -1,3 +1,23 @@
+## Version: v2.6 | Created: 2026-10-23
+
+### Performance Improvement — Faster Whitelist/Blacklist Checks
+
+Cached the whitelist/blacklist decision logic so it runs once per class/method instead of on every call:
+- `WeldCoreUtils.cleanProxyClassName()` now uses a precompiled `Pattern` and caches the cleaned name per class.
+- `WeldTraceFilterConfig.shouldTraceProxyCall()` / `shouldTraceBeanInstance()` and `TraceIgnoreConfig.shouldIgnoreTrace()` cache their decision in a `class → method → Boolean` map, clearing automatically on config reload.
+- Added a `shouldIgnoreTrace(String className, String methodName)` overload so callers no longer need to build a `"class:method"` string just to check the blacklist.
+
+**Result**: measured an 80% reduction in the Weld extension's own overhead on a 1,000-item list workload (isolated from the agent's baseline cost). All 100 existing unit tests pass unchanged.
+
+### Files Changed
+- `weld-core-3.0`, `weld-core-4.0`: `WeldCoreUtils.java`, `BeanInstance_Instrumentation.java`, `StackAwareMethodHandler_Instrumentation.java` (3.0 only), `CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation.java`, `InterceptorMethodHandler_Instrumentation.java`
+- `weld-core-3.0`, `weld-core-4.0`, `weld-ejb`: `config/WeldTraceFilterConfig.java`, `config/TraceIgnoreConfig.java`
+
+### Breaking Changes
+- None — whitelist/blacklist behavior is unchanged, only the cost of evaluating it.
+
+---
+
 ## Version: v2.5 | Created: 2026-08-19
 
 ### Performance Fix — Root Cause of Test 11/12 Residual Span Overhead
