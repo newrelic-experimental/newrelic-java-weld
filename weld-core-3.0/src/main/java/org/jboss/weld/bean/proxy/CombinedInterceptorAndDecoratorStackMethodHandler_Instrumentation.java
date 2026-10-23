@@ -45,10 +45,9 @@ public class CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation {
 			String cleanedClassName = WeldCoreUtils.cleanProxyClassName(
 				targetMethod.getDeclaringClass().getName());
 			String methodName = targetMethod.getName();
-			String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
 			if (WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName)
-					&& !TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+					&& !TraceIgnoreConfig.shouldIgnoreTrace(cleanedClassName, methodName)) {
 
 				String metricName = "Custom/Weld/StackAwareMethodHandler/" +
 					"CombinedInterceptorAndDecoratorStackMethodHandler/invoke/" +

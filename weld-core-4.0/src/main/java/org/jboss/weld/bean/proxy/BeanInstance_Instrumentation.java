@@ -29,11 +29,9 @@ public class BeanInstance_Instrumentation {
 			String cleanedClassName = WeldCoreUtils.cleanProxyClassName(className);
 			String methodName = method.getName();
 
-			String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
-
 			// Whitelist first — fast rejection. Blacklist only runs for whitelisted methods.
 			if (WeldTraceFilterConfig.shouldTraceBeanInstance(cleanedClassName, methodName)
-					&& !TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+					&& !TraceIgnoreConfig.shouldIgnoreTrace(cleanedClassName, methodName)) {
 				// Build metric name with cleaned class name
 				String metricName = MessageFormat.format(
 					"Custom/Weld/BeanInstance/{0}/invoke/{1}/{2}",

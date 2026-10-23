@@ -9,6 +9,7 @@ import com.newrelic.api.agent.NewRelic;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -23,6 +24,14 @@ public class TraceIgnoreConfig implements AgentConfigListener {
 
     private static volatile boolean ignoreTracesEnabled = false;
     private static volatile Set<Pattern> ignorePatterns = new CopyOnWriteArraySet<>();
+
+    // shouldIgnoreTrace runs on every whitelisted CDI call — caching per method name avoids
+    // re-running the pattern loop on every call. Cleared on config reload.
+    private static final ConcurrentHashMap<String, Boolean> decisionCache = new ConcurrentHashMap<>();
+
+    // Nested cache for the (className, methodName) overload — lets callers that already hold
+    // the two Strings separately skip building a throwaway "class:method" key on every call.
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<String, Boolean>> decisionCacheByClass = new ConcurrentHashMap<>();
 
     private static final Logger logger = NewRelic.getAgent().getLogger();
 
@@ -43,6 +52,10 @@ public class TraceIgnoreConfig implements AgentConfigListener {
     }
 
     private void loadConfig(Config config) {
+        // Decisions cached under the old config are no longer valid once patterns change.
+        decisionCache.clear();
+        decisionCacheByClass.clear();
+
         Boolean enabled = config.getValue(ENABLED_KEY);
         if (enabled != null) {
             ignoreTracesEnabled = enabled;
@@ -90,6 +103,49 @@ public class TraceIgnoreConfig implements AgentConfigListener {
             return false;
         }
 
+        Boolean cached = decisionCache.get(fullyQualifiedMethodName);
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean result = computeShouldIgnoreTrace(fullyQualifiedMethodName);
+        decisionCache.put(fullyQualifiedMethodName, result);
+        return result;
+    }
+
+    /**
+     * Same check as {@link #shouldIgnoreTrace(String)}, for callers that already hold the
+     * class and method names separately (every weave call site does) — avoids allocating and
+     * hashing a fresh "class:method" String on every call just to use it as a cache key.
+     *
+     * @param className Fully qualified class name.
+     * @param methodName Method name.
+     * @return true if the method should be ignored, false otherwise.
+     */
+    public static boolean shouldIgnoreTrace(String className, String methodName) {
+        if (!ignoreTracesEnabled || ignorePatterns.isEmpty()) {
+            return false;
+        }
+
+        // ConcurrentHashMap rejects null keys — null class/method is an edge case,
+        // not the hot path, so skip the cache rather than guard every map op.
+        if (className == null || methodName == null) {
+            return computeShouldIgnoreTrace(className + ":" + methodName);
+        }
+
+        ConcurrentHashMap<String, Boolean> methodCache =
+            decisionCacheByClass.computeIfAbsent(className, c -> new ConcurrentHashMap<>());
+        Boolean cached = methodCache.get(methodName);
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean result = computeShouldIgnoreTrace(className + ":" + methodName);
+        methodCache.put(methodName, result);
+        return result;
+    }
+
+    private static boolean computeShouldIgnoreTrace(String fullyQualifiedMethodName) {
         for (Pattern pattern : ignorePatterns) {
             if (pattern.matcher(fullyQualifiedMethodName).matches()) {
                 logger.log(Level.FINER, "New Relic TraceIgnoreConfig: Ignoring trace for {0} (matched pattern {1})", fullyQualifiedMethodName, pattern.pattern());
