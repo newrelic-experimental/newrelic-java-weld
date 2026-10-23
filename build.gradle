@@ -35,6 +35,47 @@ apply plugin: 'de.undercouch.download'
 import templates.*
 import de.undercouch.gradle.tasks.download.Download
 
+// Installs the no-leaks pre-commit hook (hooks/no-leaks.sh, .pre-commit-config.yaml) into
+// .git/hooks on first build. Never fails the build — `pre-commit` isn't required to compile
+// or run the project, only to get leak protection on commit.
+task installGitHooks {
+  description = 'Installs the no-leaks pre-commit hook via the pre-commit framework, if available.'
+  group = 'New Relic'
+
+  outputs.upToDateWhen { false }
+
+  doLast {
+    def hasPreCommit = { ->
+      try {
+        def result = exec {
+          commandLine 'which', 'pre-commit'
+          standardOutput = new ByteArrayOutputStream()
+          errorOutput = new ByteArrayOutputStream()
+          ignoreExitValue = true
+        }
+        return result.exitValue == 0
+      } catch (Exception ignored) {
+        return false
+      }
+    }
+
+    if (!hasPreCommit()) {
+      println ''
+      println '⚠ pre-commit not found — skipping no-leaks hook install.'
+      println '  Install it to get leak protection on commit: pipx install pre-commit (or: pip install pre-commit)'
+      println '  Then run: pre-commit install'
+      println ''
+      return
+    }
+
+    exec {
+      workingDir projectDir
+      commandLine 'pre-commit', 'install'
+      ignoreExitValue = true
+    }
+  }
+}
+
 task getAgent(type: Download) {
    def rootProject = projectDir.path
    src 'https://repo1.maven.org/maven2/com/newrelic/agent/java/newrelic-agent/'+project.javaAgentVersion+'/newrelic-agent-'+project.javaAgentVersion+'.jar'
@@ -160,6 +201,8 @@ subprojects {
   tasks.register('install', Copy) {
     description = 'Copies compiled jar to the NEW_RELIC_EXTENSIONS_DIR.'
     group  = 'New Relic'
+
+    dependsOn rootProject.tasks.named('installGitHooks')
 
     def extDir = System.getenv("NEW_RELIC_EXTENSIONS_DIR") ?: " "
 
