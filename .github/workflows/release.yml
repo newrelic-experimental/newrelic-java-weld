@@ -101,6 +101,9 @@ jobs:
                   prerelease:false,
                   repo:context.repo.repo,
                   tag_name:tag,
+                  // Without this, GitHub tags whatever the default branch's HEAD happens to
+                  // be at creation time, not the commit this workflow run actually built from.
+                  target_commitish:context.sha,
                   body:changelog
                 });
 
