@@ -46,12 +46,11 @@ public class CombinedInterceptorAndDecoratorStackMethodHandler_Instrumentation {
 			String cleanedClassName = WeldCoreUtils.cleanProxyClassName(
 				targetMethod.getDeclaringClass().getName());
 			String methodName = targetMethod.getName();
-			String fullyQualifiedMethodName = cleanedClassName + ":" + methodName;
 
 			// Whitelist first — fast rejection for non-whitelisted methods.
 			// Blacklist only runs for the small whitelisted set.
 			if (WeldTraceFilterConfig.shouldTraceProxyCall(cleanedClassName, methodName)
-					&& !TraceIgnoreConfig.shouldIgnoreTrace(fullyQualifiedMethodName)) {
+					&& !TraceIgnoreConfig.shouldIgnoreTrace(cleanedClassName, methodName)) {
 
 				String metricName = "Custom/Weld/StackAwareMethodHandler/" +
 					"CombinedInterceptorAndDecoratorStackMethodHandler/invoke/" +
